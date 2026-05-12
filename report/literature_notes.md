@@ -2,7 +2,7 @@
 
 **Author:** Darren Touopi  
 **Programme:** BAC+4 — Sécurité et Qualité des Réseaux (SQR), Polytech Dijon  
-**Last updated:** 30/04/2026  
+**Last updated:** 12/05/2026  
 
 ---
 
@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | 1 | Toward Generating a New Intrusion Detection Dataset and Intrusion Traffic Characterization | Sharafaldin, Lashkari, Ghorbani | 2018 | ✅ Read |
 | 2 | A Survey of Network-based Intrusion Detection Data Sets | Ring, Wunderlich, Scheuring, Landes, Hotho | 2019 | ✅ Read |
-| 3 | Deep Learning for Cyber Security Intrusion Detection | Ferrag et al. | 2020 | ⏳ To read |
+| 3 | Deep Learning for Cyber Security Intrusion Detection | Ferrag et al. | 2020 | ✅ Read |
 | 4 | Random Forests | Breiman | 2001 | ⏳ To read |
 | 5 | XGBoost: A Scalable Tree Boosting System | Chen & Guestrin | 2016 | ⏳ To read |
 | 6 | Long Short-Term Memory | Hochreiter & Schmidhuber | 1997 | ⏳ To read |
@@ -249,3 +249,150 @@ directly supporting the choice made in this project.
   algorithmic foundations of each model
 
 ---
+
+## Paper 3 — Ferrag et al. (2020)
+
+**Full title:** Deep Learning for Cyber Security Intrusion Detection:
+Approaches, Datasets, and Comparative Study
+**Authors:** Mohamed Amine Ferrag, Leandros Maglaras,
+Sotiris Moschoyiannis, Helge Janicke
+**Journal:** Journal of Information Security and Applications,
+Volume 50, 2020, 102419 — Elsevier
+**DOI:** 10.1016/j.jisa.2019.102419
+**Available online:** 24 December 2019
+**Read on:** 08/05/2026
+
+### Summary
+This paper presents a comprehensive survey of deep learning
+approaches for cyber security intrusion detection. It reviews
+IDS systems based on deep learning, classifies 35 public
+cyber datasets into 7 categories, analyzes 7 deep learning
+models, and provides a comparative study on two real traffic
+datasets (CSE-CIC-IDS2018 and Bot-IoT). It is the first paper
+to thoroughly cover approaches, datasets, AND a comparative
+study of deep learning for IDS simultaneously.
+
+### The 7 deep learning approaches covered
+The paper classifies deep learning models into two families:
+
+**Deep discriminative models (supervised):**
+- Deep Neural Networks (DNN)
+- Recurrent Neural Networks (RNN) — includes LSTM
+- Convolutional Neural Networks (CNN)
+
+**Generative/unsupervised models:**
+- Restricted Boltzmann Machine (RBM)
+- Deep Belief Networks (DBN)
+- Deep Boltzmann Machines (DBM)
+- Deep Auto-Encoders (DA)
+
+### Key experimental results (Table 8 & 9)
+Experiments conducted on CSE-CIC-IDS2018 and Bot-IoT datasets
+using Google Colab with GPU, TensorFlow, Python 3.
+
+**Best discriminative model: CNN**
+- Accuracy: 97.376% on CSE-CIC-IDS2018 (100 hidden nodes, LR=0.5)
+- Accuracy: 98.371% on Bot-IoT (100 hidden nodes, LR=0.5)
+- Best overall detection rate (DR Overall): 97.28%
+
+**RNN performance on CSE-CIC-IDS2018:**
+- Accuracy: 97.310% (100 hidden nodes, LR=0.5)
+- Best detection rate for 7 specific attack types including
+  DoS Hulk (94.912%), DoS GoldenEye (98.330%),
+  Infiltration (97.874%)
+- Training time: always between DNN (fastest) and CNN (slowest)
+
+**Best unsupervised model: Deep Auto-Encoder (DA)**
+- DR Overall: 98.18% on CSE-CIC-IDS2018
+- Accuracy: 98.394% on Bot-IoT (100 hidden nodes, LR=0.5)
+
+**Random Forest comparison (Figure 12):**
+All deep learning models outperform Random Forest in terms
+of overall detection rate — directly justifies using deep
+learning (LSTM) alongside RF and XGBoost in my project.
+
+### Key findings for my project
+
+**Justification of LSTM (RNN):**
+The paper confirms that RNN-based approaches (including LSTM)
+achieve competitive performance for intrusion detection —
+accuracy above 97% — and specifically excel at detecting
+temporally complex attacks like DoS and Infiltration where
+sequential patterns matter. This directly justifies the
+inclusion of LSTM as the third model in my hybrid IDS.
+
+**Justification of CNN as alternative:**
+CNN achieved the highest accuracy (97.376%) among discriminative
+models. If LSTM training proves too costly even on the RTX 4090,
+CNN is a validated alternative — this is my fallback option
+noted in the risk mitigation plan.
+
+**Deep learning vs Random Forest:**
+Figure 12 clearly shows all deep learning models outperform
+RF, NB, SVM, and ANN in overall detection rate. This is a
+key result to cite in my benchmark section when comparing
+RF (baseline) vs LSTM (deep learning) results.
+
+**On CICIDS2017 vs CSE-CIC-IDS2018:**
+Ferrag et al. conducted experiments on CSE-CIC-IDS2018 and
+not CICIDS2017 — because their focus was on newer datasets.
+However, their RNN results on CSE-CIC-IDS2018 provide a
+performance baseline that validates the LSTM approach.
+My results on CICIDS2017 will be compared against their
+CSE-CIC-IDS2018 results in the discussion section.
+
+**On dataset variety:**
+The paper classifies 35 datasets into 7 categories. Notably:
+- CICIDS2017 is listed as a network traffic-based dataset
+  (Table 3, cited 87 times as of 2019)
+- CSE-CIC-IDS2018 listed with 0 citations at publication time
+  — confirms CICIDS2017 is the more established benchmark
+
+**Hyperparameters used (Table 6):**
+| Parameter | Value used |
+|---|---|
+| Learning rate | 0.01 to 0.5 |
+| Epochs | 100 |
+| Hidden nodes | 15 to 100 |
+| Batch size | 1000 |
+| Activation | Sigmoid |
+| Classification | Softmax |
+These will guide my LSTM hyperparameter tuning in notebook 05.
+
+### RNN/LSTM papers cited that are useful for my related work
+- Kim et al. [31] — LSTM on KDD99, 98.8% detection rate
+- Yin et al. [34] — RNN on NSL-KDD, accuracy > RF with
+  learning rate=0.1 and 80 hidden nodes
+- Jiang et al. [36] — LSTM multi-channel IDS, 99.23%
+  detection rate, 9.86% FAR on NSL-KDD
+- Ferrag et al. [37] — RNN on CICIDS2017 ← same dataset
+  as mine, direct reference for my related work section
+
+### How I will cite this paper
+- When justifying LSTM as third model (Section 3.1 of report)
+- When comparing deep learning vs traditional ML (benchmark)
+- When justifying hyperparameter choices in notebook 05
+- When discussing CNN as alternative/fallback to LSTM
+- When comparing CICIDS2017 vs CSE-CIC-IDS2018 (dataset section)
+
+### Important note for my report
+Ferrag et al. [37] (self-citation in this paper) applied RNN
+on CICIDS2017 — this is a direct precedent for my LSTM
+approach on the same dataset. I must find and cite this
+specific paper in my related work section:
+"Ferrag MA, Maglaras L. Deepcoin: a novel deep learning and
+blockchain-based energy exchange framework for smart grids.
+IEEE Trans. Eng. Manage. 2019." — Note: the CICIDS2017 RNN
+work appears to be embedded in this paper.
+
+### Limitations noted by authors
+- Experiments only on CSE-CIC-IDS2018 and Bot-IoT — not
+  CICIDS2017 (opportunity for my project to fill this gap)
+- No predefined train/test splits used — same issue as mine
+- Hyperparameter search is limited (only 4 values of HN
+  and 3 values of LR tested)
+- No hybrid IDS proposed — purely single-model comparison
+  (gap that my project fills with the Fusion Engine)
+
+---
+
