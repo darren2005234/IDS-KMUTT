@@ -260,7 +260,7 @@ Sotiris Moschoyiannis, Helge Janicke
 Volume 50, 2020, 102419 — Elsevier
 **DOI:** 10.1016/j.jisa.2019.102419
 **Available online:** 24 December 2019
-**Read on:** 08/05/2026
+**Read on:** 12/05/2026
 
 ### Summary
 This paper presents a comprehensive survey of deep learning
