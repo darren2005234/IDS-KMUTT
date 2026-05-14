@@ -396,3 +396,130 @@ work appears to be embedded in this paper.
 
 ---
 
+## Paper 4 — Breiman (2001)
+
+**Full title:** Random Forests
+**Author:** Leo Breiman
+**Institution:** Statistics Department, University of California,
+Berkeley, CA 94720
+**Journal:** Machine Learning, Volume 45, pages 5–32, 2001
+**Publisher:** Kluwer Academic Publishers
+**Read on:** 14/05/2026
+
+### Summary
+This is the original paper introducing the Random Forest algorithm.
+Breiman defines a Random Forest as a collection of tree classifiers
+where each tree depends on a random vector sampled independently,
+and each tree casts a unit vote for the most popular class. The paper
+proves theoretically that Random Forests converge and do not overfit
+as the number of trees increases, and demonstrates empirically that
+they compare favorably to Adaboost while being more robust to noise
+and significantly faster to train.
+
+### Formal definition — to cite in report
+A random forest is a classifier consisting of a collection of
+tree-structured classifiers {h(x, Theta_k), k=1,...} where the
+{Theta_k} are independent identically distributed random vectors
+and each tree casts a unit vote for the most popular class at input x.
+
+### Key theoretical findings
+
+**1. Random Forests do not overfit**
+By the Strong Law of Large Numbers, the generalization error PE*
+converges almost surely to a limit as the number of trees increases.
+This is a fundamental advantage over single decision trees.
+
+**2. The two key parameters — strength and correlation**
+The generalization error upper bound is:
+PE* <= rho_bar * (1 - s^2) / s^2
+
+Where:
+- s = strength of individual trees (higher is better)
+- rho_bar = mean correlation between trees (lower is better)
+- c/s^2 ratio = rho_bar / s^2 → the smaller, the better
+
+Random feature selection at each node reduces inter-tree
+correlation without significantly reducing individual tree
+strength — this is the core mechanism behind RF accuracy.
+
+**3. Forest-RI — Random Input selection**
+At each node, F features are randomly selected from all M features.
+Recommended value: F = int(log2(M) + 1)
+
+For CICIDS2017 with M=50 features after selection:
+F = int(log2(50) + 1) = 6 features per split
+
+**4. Out-of-bag (OOB) error estimation**
+Each tree is trained on a bootstrap sample — approximately 1/3 of
+the training data is left out (out-of-bag). OOB samples provide
+a free internal estimate of generalization error without a
+separate validation set, as accurate as a test set of equal size.
+
+In scikit-learn: set oob_score=True to obtain this estimate.
+
+### Performance results (Table 2)
+Across 19 benchmark datasets, Random Forest achieves error rates
+comparable to Adaboost and significantly better than single trees,
+while being:
+- Up to 40x faster than Adaboost (zip-code dataset)
+- More robust to label noise (Table 4 — 5% noise increases
+  RF error by only 1-8% vs up to 48.9% for Adaboost)
+- Simpler to implement and naturally parallelizable
+
+### Variable importance
+RF computes variable importance by permuting each feature in OOB
+samples and measuring the resulting increase in misclassification
+rate. Features causing large error increases when permuted are
+the most discriminative. This is directly applicable to
+identifying the most important network traffic features in
+CICIDS2017 for intrusion detection.
+
+```python
+# In notebook 03
+importances = rf_model.feature_importances_
+indices = np.argsort(importances)[::-1]
+# Plot top 20 most discriminative features
+```
+
+### Properties of Random Forests relevant to IDS
+
+| Property | Relevance to IDS project |
+|---|---|
+| No overfitting | Critical for 4.5M row dataset |
+| No feature scaling needed | Tree-based — no normalization required |
+| Built-in feature importance | Identifies key network traffic features |
+| Robust to noise | Important for real network traffic |
+| Fast training | 74.39s on CICIDS2017 (Sharafaldin 2018) |
+| Handles high dimensionality | Works well with 50 flow-level features |
+
+### Recommended hyperparameters for notebook 03
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+
+rf = RandomForestClassifier(
+    n_estimators=100,        # Breiman uses 100 trees
+    max_features='log2',     # F = log2(M)+1 — Breiman's recommendation
+    oob_score=True,          # free internal validation estimate
+    class_weight='balanced', # handles residual class imbalance
+    n_jobs=-1,               # parallel training on all CPU cores
+    random_state=42          # reproducibility
+)
+```
+
+### How this paper will be cited in the report
+- Introduction of Random Forest as first model (notebook 03)
+- Justification of n_estimators=100 and max_features='log2'
+- Explanation of OOB error as internal validation method
+- Feature importance analysis of CICIDS2017 flow features
+- Argument that RF does not overfit on large datasets
+- Related Work section — algorithmic foundation of model 1
+
+### Limitations noted by the author
+- Random Forests are less interpretable than single decision trees
+  — described as an "impenetrable black box" in section 10
+- Variable importance can be misleading when correlated features
+  are present — mitigated in this project by correlation filtering
+  applied in notebook 02 (78 → 50 features)
+- Regression forests require more features than classification
+  forests — not applicable to the binary classification task
