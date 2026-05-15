@@ -14,7 +14,7 @@
 | 2 | A Survey of Network-based Intrusion Detection Data Sets | Ring, Wunderlich, Scheuring, Landes, Hotho | 2019 | ✅ Read |
 | 3 | Deep Learning for Cyber Security Intrusion Detection | Ferrag et al. | 2020 | ✅ Read |
 | 4 | Random Forests | Breiman | 2001 | ✅ Read |
-| 5 | XGBoost: A Scalable Tree Boosting System | Chen & Guestrin | 2016 | ⏳ To read |
+| 5 | XGBoost: A Scalable Tree Boosting System | Chen & Guestrin | 2016 | ✅ Read |
 | 6 | Long Short-Term Memory | Hochreiter & Schmidhuber | 1997 | ⏳ To read |
 
 ---
@@ -523,3 +523,196 @@ rf = RandomForestClassifier(
   applied in notebook 02 (78 → 50 features)
 - Regression forests require more features than classification
   forests — not applicable to the binary classification task
+
+---
+
+## Paper 5 — Chen & Guestrin (2016)
+
+**Full title:** XGBoost: A Scalable Tree Boosting System
+**Authors:** Tianqi Chen, Carlos Guestrin
+**Institution:** University of Washington
+**Conference:** KDD '16 — August 13-17, 2016, San Francisco, CA, USA
+**arXiv:** 1603.02754v3
+**Read on:** 15/05/2026
+
+### Summary
+This paper introduces XGBoost (eXtreme Gradient Boosting), a
+scalable end-to-end tree boosting system that has become the
+de-facto standard for structured data machine learning
+competitions and production pipelines. Among 29 Kaggle winning
+solutions in 2015, 17 used XGBoost. The system combines a
+regularized learning objective, a novel sparsity-aware split
+finding algorithm, weighted quantile sketch for approximate
+tree learning, and cache-aware block structures to achieve
+performance more than 10x faster than scikit-learn's GBM
+implementation while maintaining state-of-the-art accuracy.
+
+### How XGBoost differs from standard Gradient Boosting
+
+Standard Gradient Boosting (GBM) minimizes a loss function
+by adding trees sequentially. XGBoost introduces three key
+improvements:
+
+**1. Regularized objective function**
+L(phi) = sum_i l(y_hat_i, y_i) + sum_k Omega(f_k)
+where Omega(f) = gamma*T + (1/2)*lambda*||w||^2
+
+The regularization term Omega penalizes model complexity
+by penalizing the number of leaves T and the magnitude of
+leaf weights w. This prevents overfitting and produces
+simpler, more generalizable trees. When lambda=0 and
+gamma=0, XGBoost reduces to standard gradient boosting.
+
+**2. Second-order gradient approximation**
+XGBoost uses both first-order (g_i) and second-order (h_i)
+gradient statistics to optimize the objective at each step.
+This provides a better approximation than standard GBM
+which uses only first-order gradients, enabling faster
+convergence with fewer trees.
+
+The optimal leaf weight for leaf j is:
+w*_j = -( sum_{i in I_j} g_i ) / ( sum_{i in I_j} h_i + lambda )
+
+The quality score of a tree structure is:
+L_tilde(q) = -(1/2) * sum_j [ (sum g_i)^2 / (sum h_i + lambda) ] + gamma*T
+
+**3. Shrinkage and column subsampling**
+- Shrinkage (learning rate eta): scales newly added weights
+  after each boosting step — reduces influence of each tree
+  and leaves room for future trees to improve
+- Column subsampling: randomly selects a subset of features
+  at each split — borrowed from Random Forest, prevents
+  overfitting even more than row subsampling
+
+### Key algorithmic innovations
+
+**Exact Greedy Algorithm**
+Enumerates all possible splits on all features. Requires
+sorting data by feature value. Used for single-machine
+settings. XGBoost runs this 10x faster than scikit-learn
+(0.68s vs 28.51s per tree on Higgs-1M, Table 3).
+
+**Approximate Algorithm with Weighted Quantile Sketch**
+Proposes candidate split points using percentiles of feature
+distribution. Uses a novel weighted quantile sketch that
+handles instance weights with provable theoretical guarantee
+— the first such algorithm. Two variants:
+- Global: proposes candidates once at tree construction
+- Local: re-proposes candidates after each split (fewer
+  candidates needed, better for deep trees)
+
+**Sparsity-aware Split Finding**
+Handles missing values, zero entries, and one-hot encoded
+features in a unified way. Each tree node learns a default
+direction for missing values. Complexity is linear in the
+number of non-missing entries. 50x faster than naive
+implementation on sparse data (Figure 5).
+
+Directly relevant to CICIDS2017: after feature selection,
+some flows may have zero values for certain features
+(e.g., flags not present in UDP flows). XGBoost handles
+this natively without imputation.
+
+**Column Block for Parallel Learning**
+Data stored in compressed column (CSC) format, sorted
+once before training and reused across all iterations.
+Enables parallel split finding across columns. Supports
+column subsampling efficiently.
+
+**Cache-aware Access**
+Prefetching algorithm allocates internal buffer per thread
+to fetch gradient statistics, reducing cache miss overhead.
+2x speedup on large datasets (10M+ examples).
+
+### Performance results
+
+**vs scikit-learn GBM (Table 3 — Higgs 1M, 500 trees):**
+| Method | Time per tree | Test AUC |
+|---|---|---|
+| XGBoost | 0.68s | 0.8304 |
+| scikit-learn | 28.51s | 0.8302 |
+| R GBM | 1.03s | 0.6224 |
+
+XGBoost achieves same accuracy as scikit-learn at 42x speed.
+
+**Scalability:**
+- Single machine: handles 10M+ examples
+- Out-of-core: processes 1.7 billion examples on one machine
+- Distributed: scales linearly with number of machines
+  (Figure 13 — 4 to 32 machines on 1.7B criteo dataset)
+
+### Comparison with Random Forest
+
+| Aspect | Random Forest (Breiman 2001) | XGBoost (Chen 2016) |
+|---|---|---|
+| Training strategy | Parallel independent trees | Sequential boosting |
+| Bias-variance | Reduces variance | Reduces both bias and variance |
+| Overfitting | Robust by design | Controlled by regularization |
+| Missing values | Requires imputation | Native handling |
+| Speed | Fast | 10x+ faster than GBM |
+| Hyperparameters | Few (n_estimators, max_features) | More (eta, max_depth, lambda, gamma...) |
+| Interpretability | Feature importance | Feature importance + SHAP |
+
+### Recommended hyperparameters for notebook 04
+
+```python
+import xgboost as xgb
+
+xgb_model = xgb.XGBClassifier(
+    n_estimators=500,        # number of trees — more than RF
+    max_depth=8,             # Chen et al. use max_depth=8
+    learning_rate=0.1,       # eta — shrinkage factor
+    subsample=0.8,           # row subsampling
+    colsample_bytree=0.8,    # column subsampling per tree
+    reg_lambda=1.0,          # L2 regularization (lambda)
+    reg_alpha=0.0,           # L1 regularization (alpha)
+    scale_pos_weight=1,      # for imbalanced classes if needed
+    use_label_encoder=False,
+    eval_metric='auc',
+    random_state=42,
+    n_jobs=-1,
+    tree_method='hist'       # approximate algorithm — faster
+)
+```
+
+For hyperparameter tuning with Optuna in notebook 04:
+```python
+import optuna
+
+def objective(trial):
+    params = {
+        'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+        'max_depth': trial.suggest_int('max_depth', 3, 10),
+        'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3),
+        'subsample': trial.suggest_float('subsample', 0.6, 1.0),
+        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 1.0),
+        'reg_lambda': trial.suggest_float('reg_lambda', 0.0, 10.0),
+    }
+    # cross-validation and return F1 score
+```
+
+### How this paper will be cited in the report
+- Introduction of XGBoost as second model (notebook 04)
+- Justification of regularized objective vs standard GBM
+- Justification of max_depth=8 and learning_rate=0.1
+- When explaining sparsity handling for CICIDS2017 features
+- Comparison table RF vs XGBoost vs LSTM in benchmark section
+- When arguing XGBoost reduces both bias and variance
+  (advantage over RF which only reduces variance)
+
+### Key result for the benchmark section
+Table 3 shows XGBoost achieves AUC=0.8304 vs scikit-learn
+GBM AUC=0.8302 at 42x the speed. This demonstrates that
+XGBoost provides state-of-the-art accuracy with practical
+training times — directly justifying its inclusion in the
+hybrid IDS benchmark alongside Random Forest and LSTM.
+
+### Limitations noted by the authors
+- Exact greedy algorithm does not scale to datasets that
+  exceed memory — approximate algorithm needed for very
+  large datasets (relevant for the 4.5M row CICIDS2017
+  post-SMOTE dataset → use tree_method='hist')
+- More hyperparameters than Random Forest — requires more
+  careful tuning (addressed by Optuna in notebook 04)
+- Less interpretable than a single decision tree
+
