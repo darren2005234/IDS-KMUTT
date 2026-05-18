@@ -716,3 +716,253 @@ hybrid IDS benchmark alongside Random Forest and LSTM.
   careful tuning (addressed by Optuna in notebook 04)
 - Less interpretable than a single decision tree
 
+---
+
+## Paper 6 — Hochreiter & Schmidhuber (1997)
+
+**Full title:** Long Short-Term Memory
+**Authors:** Sepp Hochreiter, Jürgen Schmidhuber
+**Institution:** Fakultät für Informatik, Technische Universität
+München, Germany + IDSIA, Lugano, Switzerland
+**Journal:** Neural Computation, Volume 9, Issue 8,
+pages 1735–1780, November 1997
+**Publisher:** MIT Press
+**DOI:** 10.1162/neco.1997.9.8.1735
+**Read on:** 18/05/2026
+
+### Summary
+This is the foundational paper that introduces the Long
+Short-Term Memory (LSTM) architecture. The authors identify
+and solve the fundamental problem of standard recurrent
+neural networks (RNNs): the vanishing and exploding gradient
+problem that prevents learning long-term temporal dependencies.
+LSTM addresses this through a novel architecture using memory
+cells with multiplicative gating units, allowing constant
+error flow through the network over thousands of time steps.
+This paper has become one of the most cited works in deep
+learning and is the foundation of nearly all modern sequence
+modeling applications.
+
+### The fundamental problem solved — vanishing gradient
+
+In standard RNNs, gradients propagate through time via
+repeated multiplication by the weight matrix W. When the
+spectral radius of W is less than 1, gradients shrink
+exponentially with the number of time steps — making it
+impossible to learn dependencies spanning more than ~10
+time steps. When the spectral radius is greater than 1,
+gradients explode.
+
+Hochreiter & Schmidhuber prove that with standard RNNs:
+- Error signals "flowing backwards in time" tend to either
+  blow up or vanish
+- The temporal evolution of the backpropagated error
+  exponentially depends on the size of the weights
+- Bridging long time lags requires constant error flow
+
+### The LSTM solution — Constant Error Carousel (CEC)
+
+The core innovation is the Constant Error Carousel — a
+self-connected linear unit with a fixed weight of 1.0.
+This ensures that error signals propagate backwards in
+time without decay or explosion across arbitrary time lags.
+
+To prevent the CEC from being corrupted by irrelevant
+inputs and to control when its content should affect the
+output, the authors introduce multiplicative gating units
+that learn when to read from and write to the memory cell.
+
+### LSTM architecture (original 1997 version)
+
+The original LSTM unit consists of:
+
+**Memory cell c(t)** — the Constant Error Carousel
+Self-recurrent linear unit storing the cell state across
+time steps with constant weight = 1.0.
+
+**Input gate i(t)** — multiplicative unit
+Controls whether new information is allowed to enter the
+memory cell. Activation = sigmoid(W_i · [x(t), h(t-1)] + b_i).
+When close to 0, the cell content is protected from
+irrelevant inputs.
+
+**Output gate o(t)** — multiplicative unit
+Controls whether the memory cell content is exposed to
+the rest of the network. Activation = sigmoid(W_o · [x(t),
+h(t-1)] + b_o). When close to 0, other units are protected
+from currently irrelevant memory contents.
+
+The forget gate was NOT in the original 1997 paper — it
+was added by Gers, Schmidhuber & Cummins (2000) and is
+now considered standard. Modern LSTM implementations
+(including Keras) use the three-gate version.
+
+### Cell state update — the key equation
+
+c(t) = c(t-1) + g(net_c(t)) · y_in(t)
+
+where:
+- c(t-1) is the previous cell state (CEC self-recurrence)
+- g(net_c(t)) is the squashed input to the cell
+- y_in(t) is the input gate activation
+- The addition + ensures constant error flow
+
+Output of the memory cell:
+y_c(t) = h(c(t)) · y_out(t)
+
+where h() is typically tanh and y_out(t) is the output
+gate activation.
+
+### Why this matters for IDS
+
+The vanishing gradient problem is precisely the limitation
+that prevents standard RNNs from detecting attacks with
+long temporal signatures in network traffic. Examples:
+
+- **Slow DDoS attacks**: Connection patterns evolve over
+  hundreds of flows. Standard RNN cannot link initial
+  reconnaissance to later flood phase.
+- **Multi-stage infiltration**: An infiltration attack
+  (such as in CICIDS2017) involves multiple stages
+  separated by long time gaps — initial dropbox download,
+  later port scan, then exploitation.
+- **Brute force patterns**: SSH-Patator generates thousands
+  of failed authentication attempts before a successful one.
+  LSTM can maintain memory of the failure pattern across
+  the entire sequence.
+
+### Experimental validation in the paper
+
+Hochreiter & Schmidhuber test LSTM on six experimental
+problems specifically designed to require learning long
+temporal dependencies — problems where standard RNNs
+fail completely:
+
+- **Experiment 1**: Embedded Reber Grammar (long time lags)
+- **Experiment 2**: Noise-free sequences with long time lags
+- **Experiment 3**: Noisy sequences with long time lags
+- **Experiment 4**: Adding problem (memorize and add two
+  numbers separated by many time steps)
+- **Experiment 5**: Multiplication problem
+- **Experiment 6**: Temporal order of widely separated inputs
+
+In all experiments, LSTM successfully learns dependencies
+spanning 1000+ time steps where standard RNNs, BPTT, and
+RTRL fail to converge.
+
+### Properties of LSTM as documented in the paper
+
+| Property | Value |
+|---|---|
+| Learns long-range dependencies | ✅ Up to 1000+ time steps |
+| Vanishing gradient problem | ✅ Solved by CEC |
+| Exploding gradient problem | ✅ Mitigated by gating |
+| Computational complexity per step | O(1) — same as RNN |
+| Memory footprint | Larger than RNN (multiple gates) |
+| Training time | Slower per epoch than RNN |
+| Convergence | Faster on long-dependency tasks |
+
+### How modern LSTM differs from the 1997 paper
+
+Modern implementations (Keras, PyTorch) include:
+- **Forget gate** (Gers et al. 2000) — explicit mechanism
+  to clear cell state
+- **Peephole connections** (Gers & Schmidhuber 2000) —
+  gates can see the cell state directly
+- **Coupled input-forget gates** (some variants)
+- **Layer normalization** (modern addition)
+
+For notebook 05, the Keras `LSTM` layer uses the modern
+three-gate version with forget gate by default.
+
+### Recommended LSTM hyperparameters for notebook 05
+
+```python
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Dropout
+
+model = Sequential([
+    LSTM(128, return_sequences=True,
+         input_shape=(timesteps, n_features)),
+    Dropout(0.2),
+    LSTM(64, return_sequences=False),
+    Dropout(0.2),
+    Dense(32, activation='relu'),
+    Dense(1, activation='sigmoid')   # binary classification
+])
+
+model.compile(
+    optimizer='adam',
+    loss='binary_crossentropy',
+    metrics=['accuracy', 'AUC', 'Precision', 'Recall']
+)
+```
+
+Hyperparameter rationale based on Hochreiter & Schmidhuber:
+- **128 units in first layer**: large enough to capture
+  diverse temporal patterns in network flows
+- **64 units in second layer**: forces hierarchical
+  abstraction (low-level → high-level features)
+- **Dropout 0.2**: prevents overfitting on the
+  imbalanced CICIDS2017 dataset
+- **tanh activation (default)**: keeps cell state bounded,
+  prevents value explosion across long sequences
+
+### How this paper will be cited in the report
+- Introduction of LSTM as third model (notebook 05)
+- Theoretical justification for handling long temporal
+  dependencies in network traffic
+- Explanation of why standard RNNs fail on IDS sequences
+- Description of the Constant Error Carousel and gating
+  mechanism in the Methodology section
+- Foundational reference for the deep learning component
+  of the hybrid IDS
+
+### Key quote for report
+Hochreiter & Schmidhuber (1997) introduce Long Short-Term
+Memory networks specifically to address the vanishing
+gradient problem that prevents standard recurrent neural
+networks from learning temporal dependencies spanning
+more than approximately ten time steps. The Constant
+Error Carousel mechanism enables LSTM to maintain
+memory across arbitrary time lags — a property essential
+for detecting multi-stage network attacks where attack
+signatures span hundreds of consecutive network flows.
+
+### Limitations noted by the authors
+- LSTM has more parameters than standard RNN (gates require
+  additional weight matrices) — increases training time
+- Sequential nature limits parallelization across time
+  steps (unlike CNN or Transformer)
+- The original 1997 paper does not include forget gate —
+  added later by Gers et al. (2000)
+- Difficult to interpret what each memory cell encodes
+  (similar to other deep learning black-box concerns)
+
+
+---
+
+## Summary of literature foundation for the IDS project
+
+This literature review establishes the theoretical and
+empirical foundation for the proposed hybrid intrusion
+detection system:
+
+- **Dataset choice** justified by Sharafaldin et al. (2018)
+  and Ring et al. (2019) — CICIDS2017 is the most complete
+  publicly available IDS benchmark dataset.
+- **Random Forest** as baseline ML model — justified by
+  Breiman (2001) for its convergence guarantees and by
+  Sharafaldin et al. (2018) for its F1=0.97 performance
+  on CICIDS2017.
+- **XGBoost** as second model — justified by Chen & Guestrin
+  (2016) for its regularized objective, sparsity-aware
+  algorithm, and 42x speed advantage over standard GBM.
+- **LSTM** as deep learning model — justified by Hochreiter
+  & Schmidhuber (1997) for its ability to learn long-range
+  temporal dependencies, and by Ferrag et al. (2020) for
+  its 97%+ accuracy on modern IDS benchmarks.
+- **Hybrid architecture** (ML + Snort signatures) — addresses
+  a research gap identified across all surveyed papers,
+  none of which propose a unified hybrid system with a
+  Fusion Engine.
