@@ -15,7 +15,7 @@
 | 3 | Deep Learning for Cyber Security Intrusion Detection | Ferrag et al. | 2020 | ✅ Read |
 | 4 | Random Forests | Breiman | 2001 | ✅ Read |
 | 5 | XGBoost: A Scalable Tree Boosting System | Chen & Guestrin | 2016 | ✅ Read |
-| 6 | Long Short-Term Memory | Hochreiter & Schmidhuber | 1997 | ⏳ To read |
+| 6 | Long Short-Term Memory | Hochreiter & Schmidhuber | 1997 | ✅ Read |
 
 ---
 
