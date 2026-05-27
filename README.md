@@ -49,6 +49,7 @@ IDS-KMUTT is a hybrid network intrusion detection system designed to protect uni
 
 ## 🗂️ Repository Structure
 
+```
 IDS-KMUTT/
 ├── notebooks/              ← Jupyter notebooks (01 → 07)
 │   ├── 01_exploration.ipynb
@@ -56,24 +57,25 @@ IDS-KMUTT/
 │   ├── 03_random_forest.ipynb
 │   └── 04_xgboost.ipynb
 ├── Scripts/                ← SLURM job scripts + Python training scripts
-│   ├── train_rf.py
-│   ├── rf_job.sbatch
-│   ├── train_xgb.py
-│   └── xgb_job.sbatch
+│   ├── train_rf.py         ← RF training script for HPC cluster
+│   ├── rf_job.sbatch       ← SLURM job script for RF
+│   ├── train_xgb.py        ← XGBoost + Optuna training script
+│   └── xgb_job.sbatch      ← SLURM job script for XGBoost
 ├── dashboard/              ← Django app
-│   ├── models.py           ← Alert model
+│   ├── models.py           ← Alert database model
 │   ├── views.py            ← REST API + dashboard view
-│   ├── fusion_engine.py    ← Hybrid detection logic
-│   ├── urls.py
-│   ├── templates/          ← HTML dashboard
-│   └── static/             ← CSS + JS
+│   ├── fusion_engine.py    ← Hybrid detection logic (4 rules)
+│   ├── urls.py             ← URL routing
+│   ├── templates/          ← HTML dashboard (Wazuh-inspired)
+│   └── static/             ← CSS + JavaScript (Chart.js)
 ├── results/                ← Metrics per model
 │   └── rf/
-│       ├── rf_metrics.csv
-│       └── rf_feature_importances.csv
+│       ├── rf_metrics.csv              ← F1, AUC, FPR, accuracy...
+│       └── rf_feature_importances.csv  ← Top 50 features ranked
 ├── report/                 ← Literature notes
 │   └── literature_notes.md
 └── data/                   ← .gitkeep (dataset not versioned — 1.5 GB)
+```
 
 ---
 
