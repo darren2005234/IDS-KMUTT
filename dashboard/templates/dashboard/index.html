@@ -1,0 +1,187 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDS-KMUTT — Security Dashboard</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<!-- ── Sidebar ──────────────────────────────────────────── -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-icon">🛡️</div>
+        <div>
+            <span>IDS-KMUTT</span><br>
+            <span class="version">v1.0 — Hybrid IDS</span>
+        </div>
+    </div>
+
+    <div class="sidebar-section">Overview</div>
+    <a class="sidebar-item active" href="#">
+        <span class="icon">📊</span> Dashboard
+    </a>
+    <a class="sidebar-item" href="#">
+        <span class="icon">⚡</span> Alerts
+    </a>
+
+    <div class="sidebar-section">Detection</div>
+    <a class="sidebar-item" href="#">
+        <span class="icon">🤖</span> ML Models
+    </a>
+    <a class="sidebar-item" href="#">
+        <span class="icon">🔍</span> Snort Rules
+    </a>
+    <a class="sidebar-item" href="#">
+        <span class="icon">⚙️</span> Fusion Engine
+    </a>
+
+    <div class="sidebar-section">System</div>
+    <a class="sidebar-item" href="/admin">
+        <span class="icon">🔧</span> Admin
+    </a>
+    <a class="sidebar-item" href="/api/alerts/">
+        <span class="icon">🔌</span> REST API
+    </a>
+
+    <div class="sidebar-bottom">
+        KMUTT CPE Department<br>
+        Darren Touopi — SQR 2026
+    </div>
+</aside>
+
+<!-- ── Main ─────────────────────────────────────────────── -->
+<div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <h2>Security Overview</h2>
+            <div class="breadcrumb">Dashboard → Real-time Monitoring</div>
+        </div>
+        <div class="topbar-right">
+            <div class="live-badge">
+                <div class="live-dot"></div>
+                LIVE
+            </div>
+            <div class="last-refresh" id="last-refresh">Connecting...</div>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-card total">
+                <div class="stat-icon">📋</div>
+                <div class="stat-info">
+                    <div class="value" id="stat-total">{{ total }}</div>
+                    <div class="label">Total Flows Analysed</div>
+                </div>
+            </div>
+            <div class="stat-card threat">
+                <div class="stat-icon">🔴</div>
+                <div class="stat-info">
+                    <div class="value" id="stat-threat">{{ threats }}</div>
+                    <div class="label">Threats Detected</div>
+                </div>
+            </div>
+            <div class="stat-card alert">
+                <div class="stat-icon">🟠</div>
+                <div class="stat-info">
+                    <div class="value" id="stat-alert">{{ alerts }}</div>
+                    <div class="label">ML-Only Alerts</div>
+                </div>
+            </div>
+            <div class="stat-card benign">
+                <div class="stat-icon">🟢</div>
+                <div class="stat-info">
+                    <div class="value" id="stat-benign">{{ benign }}</div>
+                    <div class="label">Benign Flows</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Traffic Distribution</h3>
+                    <span class="card-badge">Last 100 flows</span>
+                </div>
+                <canvas id="trafficChart" height="180"></canvas>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>Alert Source Distribution</h3>
+                    <span class="card-badge">By detection layer</span>
+                </div>
+                <canvas id="sourceChart" height="180"></canvas>
+            </div>
+        </div>
+
+        <!-- Alert Table -->
+        <div class="card table-card">
+            <div class="card-header">
+                <h3>⚡ Recent Alerts</h3>
+                <span class="card-badge">Auto-refresh 5s</span>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Timestamp</th>
+                            <th>Source IP</th>
+                            <th>Destination IP</th>
+                            <th>Decision</th>
+                            <th>Source Tag</th>
+                            <th>ML Confidence</th>
+                            <th>Snort SID</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alert-tbody">
+                        {% for alert in recent %}
+                        <tr>
+                            <td style="color:#64748b">#{{ alert.id }}</td>
+                            <td>{{ alert.timestamp|date:"Y-m-d H:i:s" }}</td>
+                            <td style="font-family:monospace">{{ alert.src_ip|default:"—" }}</td>
+                            <td style="font-family:monospace">{{ alert.dst_ip|default:"—" }}</td>
+                            <td><span class="badge {{ alert.decision }}">{{ alert.decision }}</span></td>
+                            <td><span class="tag {{ alert.source_tag }}">{{ alert.source_tag }}</span></td>
+                            <td>
+                                <div class="conf-bar">
+                                    <div class="bar">
+                                        <div class="fill {% if alert.ml_confidence >= 0.85 %}high{% elif alert.ml_confidence >= 0.6 %}med{% else %}low{% endif %}"
+                                             style="width:{{ alert.ml_confidence|floatformat:0 }}%">
+                                        </div>
+                                    </div>
+                                    <span>{{ alert.ml_confidence|floatformat:2 }}</span>
+                                </div>
+                            </td>
+                            <td style="color:#64748b;font-family:monospace">{{ alert.snort_sid|default:"—" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state">
+                                    🛡️ No alerts yet — system monitoring active
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="{% static 'dashboard/js/dashboard.js' %}"></script>
+</body>
+</html>
