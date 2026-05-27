@@ -1,0 +1,2 @@
+model,accuracy,f1_macro,f1_binary,precision,recall,roc_auc,fpr,tp,fp,tn,fn,train_time_s,infer_time_s,total_time_s,best_params,best_cv_f1
+Random Forest,0.9994,0.9994,0.9994,0.9991,0.9996,1.0,0.0009,454097,389,453875,167,13228.5,2.34,13249.4,"{'max_depth': 30, 'max_features': 'sqrt', 'min_samples_split': 5, 'n_estimators': 100}",0.9993

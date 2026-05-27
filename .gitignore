@@ -1,0 +1,15 @@
+# Data files
+data/processed/
+data/raw/
+
+# PDF articles
+report/*.pdf
+
+# Models
+models/*.joblib
+models/*.h5
+
+# Python cache
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
