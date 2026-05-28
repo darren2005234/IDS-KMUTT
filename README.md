@@ -36,8 +36,19 @@ IDS-KMUTT is a hybrid network intrusion detection system designed to protect uni
 **Best params:** `max_depth=30, max_features=sqrt, min_samples_split=5, n_estimators=100`  
 **Training time:** 220 min — KMUTT HPC (gpu3080, 16 CPUs, 58 GB RAM)  
 
-### ⏳ XGBoost (Notebook 04)
-*Training in progress on KMUTT HPC cluster — Job #5661*
+### ✅ XGBoost (Notebook 04)
+| Metric | Value | SRS Target |
+|---|---|---|
+| Accuracy | **99.94%** | — |
+| F1 (macro) | **99.94%** | ≥ 97% ✅ |
+| Precision | **99.91%** | — |
+| Recall (TPR) | **99.98%** | ≥ 95% ✅ |
+| ROC-AUC | **1.0000** 🔥 | — |
+| FPR | **0.09%** | ≤ 2% ✅ |
+
+**Best params:** Optuna TPE — 50 trials  
+**Training time:** 84.6 min — KMUTT HPC (gpu3080, 16 CPUs, 58 GB RAM)  
+**Inference time:** 1.00s / 908k samples — 2x faster than RF ✅
 
 ### 📋 LSTM (Notebook 05)
 *Planned — gpu4090 partition (RTX 4090)*
@@ -110,7 +121,7 @@ IDS-KMUTT/
 | Dataset exploration | ✅ Done | April 2026 |
 | Preprocessing + SMOTE | ✅ Done | April 2026 |
 | Random Forest training | ✅ Done | May 2026 |
-| XGBoost training | ⏳ In progress | May 2026 |
+| XGBoost training | ✅ Done | May 2026 |
 | LSTM training | 📋 Planned | June 2026 |
 | Benchmark (Notebook 06) | 📋 Planned | June 2026 |
 | IDS testing (Notebook 07) | 📋 Planned | July 2026 |
