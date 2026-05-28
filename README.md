@@ -50,8 +50,20 @@ IDS-KMUTT is a hybrid network intrusion detection system designed to protect uni
 **Training time:** 84.6 min — KMUTT HPC (gpu3080, 16 CPUs, 58 GB RAM)  
 **Inference time:** 1.00s / 908k samples — 2x faster than RF ✅
 
-### 📋 LSTM (Notebook 05)
-*Planned — gpu4090 partition (RTX 4090)*
+### ✅ LSTM (Notebook 05)
+| Metric | Value | SRS Target |
+|---|---|---|
+| Accuracy | **99.82%** | — |
+| F1 (macro) | **99.82%** | ≥ 95% ✅ |
+| Precision | **99.83%** | — |
+| Recall (TPR) | **99.81%** | ≥ 95% ✅ |
+| ROC-AUC | **1.0000** 🔥 | — |
+| FPR | **0.17%** | ≤ 2% ✅ |
+
+**Architecture:** 2× LSTM (128→64) + BatchNorm + Dropout + Dense  
+**Sequence length:** 10 consecutive flows (Ferrag et al. 2020)  
+**Training time:** 11.9 min — KMUTT HPC (gpu4090, RTX 4090, 24GB VRAM)  
+**Inference time:** 3.65s / 200k sequences
 
 ### 📋 Benchmark (Notebook 06)
 *Planned — RF vs XGBoost vs LSTM vs Snort vs Hybrid*
@@ -122,7 +134,7 @@ IDS-KMUTT/
 | Preprocessing + SMOTE | ✅ Done | April 2026 |
 | Random Forest training | ✅ Done | May 2026 |
 | XGBoost training | ✅ Done | May 2026 |
-| LSTM training | 📋 Planned | June 2026 |
+| LSTM training | ✅ Done | May 2026 |
 | Benchmark (Notebook 06) | 📋 Planned | June 2026 |
 | IDS testing (Notebook 07) | 📋 Planned | July 2026 |
 | Django dashboard | ✅ Done | May 2026 |
