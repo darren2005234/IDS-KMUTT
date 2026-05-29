@@ -1,23 +1,14 @@
-"""
-URL configuration for ids_kmutt project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
+from . import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('dashboard.urls')),
+    path('', views.dashboard_view, name='dashboard'),
+    path('alerts/', views.alerts_page, name='alerts'),
+    path('alerts/<int:alert_id>/', views.alert_detail, name='alert_detail'),
+    path('models/', views.ml_models_page, name='ml_models'),
+    path('api/classify/', views.classify, name='classify'),
+    path('api/alerts/', views.alert_list, name='alert_list'),
+    path('api/models/', views.models_status, name='models_status'),
+    path('api/stats/', views.stats_api, name='stats_api'),
+    path('snort/', views.snort_rules_page, name='snort_rules'),
 ]

@@ -1,0 +1,222 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDS-KMUTT — Snort Rules</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-icon">🛡️</div>
+        <div>
+            <span>IDS-KMUTT</span><br>
+            <span class="version">v1.0 — Hybrid IDS</span>
+        </div>
+    </div>
+    <div class="sidebar-section">Overview</div>
+    <a class="sidebar-item" href="{% url 'dashboard' %}"><span class="icon">📊</span> Dashboard</a>
+    <a class="sidebar-item" href="{% url 'alerts' %}"><span class="icon">⚡</span> Alerts</a>
+    <div class="sidebar-section">Detection</div>
+    <a class="sidebar-item" href="{% url 'ml_models' %}"><span class="icon">🤖</span> ML Models</a>
+    <a class="sidebar-item active" href="{% url 'snort_rules' %}"><span class="icon">🔍</span> Snort Rules</a>
+    <a class="sidebar-item" href="#"><span class="icon">⚙️</span> Fusion Engine</a>
+    <div class="sidebar-section">System</div>
+    <a class="sidebar-item" href="/admin"><span class="icon">🔧</span> Admin</a>
+    <a class="sidebar-item" href="/api/alerts/"><span class="icon">🔌</span> REST API</a>
+    <div class="sidebar-bottom">KMUTT CPE Department<br>Darren Touopi — SQR 2026</div>
+</aside>
+
+<div class="main">
+    <div class="topbar">
+        <div class="topbar-left">
+            <h2>Snort IDS — Signature Detection</h2>
+            <div class="breadcrumb">Dashboard / Snort Rules / Status and Alerts</div>
+        </div>
+        <div class="topbar-right">
+            <span style="padding:4px 12px; border-radius:4px; font-size:0.8rem; font-weight:600;
+                background:{% if snort_active %}rgba(34,197,94,0.15){% else %}rgba(239,68,68,0.15){% endif %};
+                color:{% if snort_active %}#22c55e{% else %}#ef4444{% endif %};
+                border:1px solid {% if snort_active %}rgba(34,197,94,0.3){% else %}rgba(239,68,68,0.3){% endif %};">
+                {% if snort_active %}RUNNING{% else %}STOPPED{% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div class="content">
+
+        <!-- Config cards -->
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px;">
+            <div class="card" style="padding:16px;">
+                <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Engine</div>
+                <div style="font-size:1rem; font-weight:600; color:var(--text-primary); font-family:monospace;">Snort {{ snort_version }}</div>
+            </div>
+            <div class="card" style="padding:16px;">
+                <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Ruleset</div>
+                <div style="font-size:1rem; font-weight:600; color:var(--text-primary);">{{ ruleset }}</div>
+            </div>
+            <div class="card" style="padding:16px;">
+                <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Active Rules</div>
+                <div style="font-size:1.4rem; font-weight:700; color:#60a5fa; font-family:monospace;">{{ rules_count|stringformat:"d" }}</div>
+            </div>
+            <div class="card" style="padding:16px;">
+                <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Interface</div>
+                <div style="font-size:1rem; font-weight:600; color:var(--text-primary); font-family:monospace;">{{ interface }} — {{ home_net }}</div>
+            </div>
+        </div>
+
+        <!-- Stats row -->
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:20px;">
+            <div class="stat-card total">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-info">
+                        <div class="value">{{ total_snort }}</div>
+                        <div class="label">Total Snort Alerts</div>
+                    </div>
+            </div>
+            <div class="stat-card threat">
+                <div class="stat-icon">🔴</div>
+                <div class="stat-info">
+                    <div class="value">{{ snort_only }}</div>
+                    <div class="label">Snort Only (missed by ML)</div>
+                </div>
+            </div>
+            <div class="stat-card benign">
+                <div class="stat-icon">🟢</div>
+                <div class="stat-info">
+                    <div class="value">{{ both_detected }}</div>
+                    <div class="label">Confirmed by Both Layers</div>
+                </div>
+            </div>  
+    
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+
+            <!-- Top SIDs -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Top Triggered Rule SIDs</h3>
+                    <span class="card-badge">From production alerts</span>
+                </div>
+                {% if top_sids %}
+                {% for sid in top_sids %}
+                <div style="display:flex; justify-content:space-between; align-items:center;
+                            padding:10px 0; border-bottom:1px solid var(--border);">
+                    <span style="font-family:monospace; font-size:0.85rem; color:#60a5fa;">SID {{ sid.snort_sid }}</span>
+                    <span style="font-size:0.85rem; color:var(--text-secondary);">{{ sid.count }} alert{{ sid.count|pluralize }}</span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-state">No Snort alerts recorded yet.</div>
+                {% endif %}
+            </div>
+
+            <!-- SID chart -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Alert Source Distribution</h3>
+                    <span class="card-badge">Snort vs ML vs Both</span>
+                </div>
+                <canvas id="sourceChart" height="220"></canvas>
+            </div>
+
+        </div>
+
+        <!-- Recent Snort alerts from DB -->
+        <div class="card table-card">
+            <div class="card-header">
+                <h3>Recent Snort-Detected Alerts</h3>
+                <span class="card-badge">Last 20</span>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Timestamp</th>
+                            <th>Source IP</th>
+                            <th>Destination IP</th>
+                            <th>Rule SID</th>
+                            <th>ML Verdict</th>
+                            <th>Final Decision</th>
+                            <th>Source Tag</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alert in snort_db_alerts %}
+                        <tr style="cursor:pointer;" onclick="window.location='{% url 'alert_detail' alert.id %}'">
+                            <td style="color:#64748b">#{{ alert.id }}</td>
+                            <td>{{ alert.timestamp|date:"Y-m-d H:i:s" }}</td>
+                            <td style="font-family:monospace">{{ alert.src_ip|default:"—" }}</td>
+                            <td style="font-family:monospace">{{ alert.dst_ip|default:"—" }}</td>
+                            <td style="font-family:monospace; color:#60a5fa;">{{ alert.snort_sid|default:"—" }}</td>
+                            <td>
+                                {% if alert.ml_prediction == 1 %}
+                                <span style="color:#ef4444; font-size:0.8rem; font-weight:600;">ATTACK</span>
+                                {% else %}
+                                <span style="color:#22c55e; font-size:0.8rem; font-weight:600;">BENIGN</span>
+                                {% endif %}
+                                <span style="color:#64748b; font-size:0.75rem;">({{ alert.ml_confidence|floatformat:2 }})</span>
+                            </td>
+                            <td><span class="badge {{ alert.decision }}">{{ alert.decision }}</span></td>
+                            <td><span class="tag {{ alert.source_tag }}">{{ alert.source_tag }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state">No Snort alerts recorded yet. Snort is monitoring eth0 traffic.</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const sourceChart = new Chart(
+    document.getElementById('sourceChart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Snort Only', 'Both (ML + Snort)', 'ML Only'],
+        datasets: [{
+            data: [{{ snort_only }}, {{ both_detected }}, 0],
+            backgroundColor: ['#a855f7', '#ef4444', '#3b82f6'],
+            borderColor: '#111827',
+            borderWidth: 3,
+            hoverOffset: 4
+        }]
+    },
+    options: {
+        cutout: '65%',
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { color: '#94a3b8', font: { size: 11 }, padding: 12 }
+            }
+        }
+    }
+});
+
+// Auto-refresh stats every 10s
+async function refresh() {
+    try {
+        const res = await fetch('/api/stats/');
+        const d   = await res.json();
+        sourceChart.data.datasets[0].data = [d.snort_only, d.both, d.ml_only];
+        sourceChart.update('none');
+    } catch(e) {}
+}
+setInterval(refresh, 10000);
+</script>
+
+</body>
+</html>

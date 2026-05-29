@@ -1,0 +1,209 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDS-KMUTT — Alerts</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-icon">🛡️</div>
+        <div>
+            <span>IDS-KMUTT</span><br>
+            <span class="version">v1.0 — Hybrid IDS</span>
+        </div>
+    </div>
+    <div class="sidebar-section">Overview</div>
+    <a class="sidebar-item" href="{% url 'dashboard' %}"><span class="icon">📊</span> Dashboard</a>
+    <a class="sidebar-item active" href="{% url 'alerts' %}"><span class="icon">⚡</span> Alerts</a>
+    <div class="sidebar-section">Detection</div>
+    <a class="sidebar-item" href="{% url 'ml_models' %}"><span class="icon">🤖</span> ML Models</a>
+    <a class="sidebar-item" href="{% url 'snort_rules' %}"><span class="icon">🔍</span> Snort Rules</a>
+    <a class="sidebar-item" href="#"><span class="icon">⚙️</span> Fusion Engine</a>
+    <div class="sidebar-section">System</div>
+    <a class="sidebar-item" href="/admin"><span class="icon">🔧</span> Admin</a>
+    <a class="sidebar-item" href="/api/alerts/"><span class="icon">🔌</span> REST API</a>
+    <div class="sidebar-bottom">KMUTT CPE Department<br>Darren Touopi — SQR 2026</div>
+</aside>
+
+<div class="main">
+    <div class="topbar">
+        <div class="topbar-left">
+            <h2>⚡ Alerts</h2>
+            <div class="breadcrumb">Dashboard → Alerts — {{ total }} result{{ total|pluralize }}</div>
+        </div>
+        <div class="topbar-right">
+            <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+            <div id="mode-badge" style="padding:4px 10px; border-radius:4px; font-size:0.75rem; font-weight:600;"></div>
+        </div>
+    </div>
+
+    <div class="content">
+
+        <!-- Filter bar -->
+        <div class="card" style="margin-bottom:16px; padding:16px 20px;">
+            <form method="get" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                <div style="flex:1; min-width:200px;">
+                    <input type="text" name="search" value="{{ search }}"
+                           placeholder="Search by IP address..."
+                           style="width:100%; padding:8px 12px; background:#0f172a; border:1px solid #1e2d45;
+                                  border-radius:6px; color:#e2e8f0; font-size:0.85rem; outline:none;">
+                </div>
+                <select name="decision"
+                        style="padding:8px 12px; background:#0f172a; border:1px solid #1e2d45;
+                               border-radius:6px; color:#e2e8f0; font-size:0.85rem;">
+                    <option value="">All Decisions</option>
+                    {% for d in decisions %}
+                    <option value="{{ d }}" {% if decision == d %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+                <select name="source_tag"
+                        style="padding:8px 12px; background:#0f172a; border:1px solid #1e2d45;
+                               border-radius:6px; color:#e2e8f0; font-size:0.85rem;">
+                    <option value="">All Sources</option>
+                    {% for s in source_tags %}
+                    <option value="{{ s }}" {% if source_tag == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+                <select name="detection_mode"
+                        style="padding:8px 12px; background:#0f172a; border:1px solid #1e2d45;
+                               border-radius:6px; color:#e2e8f0; font-size:0.85rem;">
+                    <option value="">All Modes</option>
+                    <option value="binary" {% if detection_mode_filter == 'binary' %}selected{% endif %}>Binary</option>
+                    <option value="multiclass" {% if detection_mode_filter == 'multiclass' %}selected{% endif %}>Multiclass</option>
+                </select>
+                <button type="submit"
+                        style="padding:8px 16px; background:#1d7adb; border:none; border-radius:6px;
+                               color:white; font-size:0.85rem; cursor:pointer;">Filter</button>
+                {% if search or decision or source_tag or detection_mode_filter %}
+                <a href="{% url 'alerts' %}"
+                   style="padding:8px 12px; color:#64748b; font-size:0.85rem; text-decoration:none;">Clear</a>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- Alerts table -->
+        <div class="card table-card">
+            <div class="card-header">
+                <h3>⚡ Alert List</h3>
+                <span class="card-badge">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Timestamp</th>
+                            <th>Source IP</th>
+                            <th>Destination IP</th>
+                            <th>Decision</th>
+                            <th>Source Tag</th>
+                            <th class="col-attack-type" style="display:none;">Attack Type</th>
+                            <th>Model</th>
+                            <th>ML Confidence</th>
+                            <th>Snort SID</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alert in page_obj %}
+                        <tr style="cursor:pointer;" onclick="window.location='{% url 'alert_detail' alert.id %}'">
+                            <td style="color:#64748b">#{{ alert.id }}</td>
+                            <td>{{ alert.timestamp|date:"Y-m-d H:i:s" }}</td>
+                            <td style="font-family:monospace">{{ alert.src_ip|default:"—" }}</td>
+                            <td style="font-family:monospace">{{ alert.dst_ip|default:"—" }}</td>
+                            <td><span class="badge {{ alert.decision }}">{{ alert.decision }}</span></td>
+                            <td><span class="tag {{ alert.source_tag }}">{{ alert.source_tag }}</span></td>
+                            <td class="col-attack-type" style="display:none;">
+                                <span style="font-size:0.75rem; padding:2px 8px; border-radius:4px;
+                                    background:rgba(99,102,241,0.15); color:#818cf8;
+                                    border:1px solid rgba(99,102,241,0.3); font-weight:600;">
+                                    {{ alert.attack_type|default:"—" }}
+                                </span>
+                            </td>
+                            <td>
+                                <span style="font-size:0.75rem; padding:2px 8px; border-radius:4px;
+                                             background:rgba(29,122,219,0.1); color:#60a5fa;">
+                                    {{ alert.ml_model_used }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="conf-bar">
+                                    <div class="bar">
+                                        <div class="fill {% if alert.ml_confidence >= 0.85 %}high{% elif alert.ml_confidence >= 0.6 %}med{% else %}low{% endif %}"
+                                             style="width:{{ alert.ml_confidence|floatformat:0 }}%"></div>
+                                    </div>
+                                    <span>{{ alert.ml_confidence|floatformat:2 }}</span>
+                                </div>
+                            </td>
+                            <td style="color:#64748b;font-family:monospace">{{ alert.snort_sid|default:"—" }}</td>
+                            <td>
+                                <a href="{% url 'alert_detail' alert.id %}"
+                                   style="color:#1d7adb; font-size:0.8rem; text-decoration:none;"
+                                   onclick="event.stopPropagation()">View →</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="11">
+                                <div class="empty-state">No alerts found matching your filters.</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.paginator.num_pages > 1 %}
+            <div style="display:flex; justify-content:center; align-items:center; gap:8px; padding:16px;">
+                {% if page_obj.has_previous %}
+                <a href="?page=1{% if decision %}&decision={{ decision }}{% endif %}{% if source_tag %}&source_tag={{ source_tag }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if detection_mode_filter %}&detection_mode={{ detection_mode_filter }}{% endif %}" class="page-btn">« First</a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if decision %}&decision={{ decision }}{% endif %}{% if source_tag %}&source_tag={{ source_tag }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if detection_mode_filter %}&detection_mode={{ detection_mode_filter }}{% endif %}" class="page-btn">‹ Prev</a>
+                {% endif %}
+                <span style="color:#94a3b8; font-size:0.85rem; padding:6px 12px;">
+                    Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} total)
+                </span>
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if decision %}&decision={{ decision }}{% endif %}{% if source_tag %}&source_tag={{ source_tag }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if detection_mode_filter %}&detection_mode={{ detection_mode_filter }}{% endif %}" class="page-btn">Next ›</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if decision %}&decision={{ decision }}{% endif %}{% if source_tag %}&source_tag={{ source_tag }}{% endif %}{% if search %}&search={{ search }}{% endif %}{% if detection_mode_filter %}&detection_mode={{ detection_mode_filter }}{% endif %}" class="page-btn">Last »</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.page-btn {
+    padding: 6px 14px; background: #1e293b; border: 1px solid #1e2d45;
+    border-radius: 6px; color: #94a3b8; text-decoration: none;
+    font-size: 0.82rem; transition: all 0.15s;
+}
+.page-btn:hover { background: #1d7adb; color: white; border-color: #1d7adb; }
+</style>
+
+<script>
+const mode = localStorage.getItem('ids_detection_mode') || 'binary';
+const badge = document.getElementById('mode-badge');
+
+if (mode === 'multiclass') {
+    badge.textContent = 'Multiclass Mode';
+    badge.style.background = 'rgba(99,102,241,0.15)';
+    badge.style.color = '#818cf8';
+    badge.style.border = '1px solid rgba(99,102,241,0.3)';
+    document.querySelectorAll('.col-attack-type').forEach(el => el.style.display = '');
+} else {
+    badge.textContent = 'Binary Mode';
+    badge.style.background = 'rgba(29,122,219,0.15)';
+    badge.style.color = '#60a5fa';
+    badge.style.border = '1px solid rgba(29,122,219,0.3)';
+}
+</script>
+
+</body>
+</html>
