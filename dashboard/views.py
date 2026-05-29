@@ -292,3 +292,60 @@ def snort_rules_page(request):
         'home_net'       : '10.35.111.10/32',
     }
     return render(request, 'dashboard/snort_rules.html', context)
+
+def fusion_engine_page(request):
+    """GET /fusion/ — Fusion Engine rules and statistics."""
+    from django.db.models import Count, Avg
+
+    # Rule application counts
+    both_count      = Alert.objects.filter(source_tag='BOTH').count()
+    ml_only_count   = Alert.objects.filter(source_tag='ML_ONLY').count()
+    snort_only_count = Alert.objects.filter(source_tag='SNORT_ONLY').count()
+    none_count      = Alert.objects.filter(source_tag='NONE').count()
+    total           = Alert.objects.count()
+
+    # Vote distribution
+    votes_1 = Alert.objects.filter(ml_model_used__contains='+').exclude(
+        ml_model_used__contains='RandomForest+XGBoost+LSTM'
+    ).count()
+    votes_2 = Alert.objects.filter(ml_model_used='RandomForest+XGBoost').count() + \
+              Alert.objects.filter(ml_model_used='RandomForest+LSTM').count() + \
+              Alert.objects.filter(ml_model_used='XGBoost+LSTM').count()
+    votes_3 = Alert.objects.filter(ml_model_used='RandomForest+XGBoost+LSTM').count()
+
+    # Model detection rates
+    rf_detections   = Alert.objects.filter(ml_model_used__contains='RandomForest').count()
+    xgb_detections  = Alert.objects.filter(ml_model_used__contains='XGBoost').count()
+    lstm_detections = Alert.objects.filter(ml_model_used__contains='LSTM').count()
+
+    # Average confidence per decision
+    avg_conf_threat = Alert.objects.filter(decision='THREAT').aggregate(
+        avg=Avg('ml_confidence'))['avg'] or 0
+    avg_conf_alert  = Alert.objects.filter(decision='ALERT').aggregate(
+        avg=Avg('ml_confidence'))['avg'] or 0
+
+    # Attack type breakdown
+    attack_dist = Alert.objects.exclude(
+        attack_type__in=['BENIGN', 'Unknown Attack', '']
+    ).values('attack_type').annotate(
+        count=Count('attack_type')
+    ).order_by('-count')
+
+    context = {
+        'both_count'       : both_count,
+        'ml_only_count'    : ml_only_count,
+        'snort_only_count' : snort_only_count,
+        'none_count'       : none_count,
+        'total'            : total,
+        'votes_1'          : votes_1,
+        'votes_2'          : votes_2,
+        'votes_3'          : votes_3,
+        'rf_detections'    : rf_detections,
+        'xgb_detections'   : xgb_detections,
+        'lstm_detections'  : lstm_detections,
+        'avg_conf_threat'  : round(avg_conf_threat * 100, 1),
+        'avg_conf_alert'   : round(avg_conf_alert * 100, 1),
+        'attack_dist'      : attack_dist,
+        'conf_threshold'   : 50,
+    }
+    return render(request, 'dashboard/fusion_engine.html', context)

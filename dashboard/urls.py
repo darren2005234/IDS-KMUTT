@@ -11,4 +11,5 @@ urlpatterns = [
     path('api/models/', views.models_status, name='models_status'),
     path('api/stats/', views.stats_api, name='stats_api'),
     path('snort/', views.snort_rules_page, name='snort_rules'),
+    path('fusion/', views.fusion_engine_page, name='fusion_engine'),
 ]

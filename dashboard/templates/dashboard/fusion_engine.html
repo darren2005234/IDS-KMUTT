@@ -1,0 +1,372 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDS-KMUTT — Fusion Engine</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-icon">🛡️</div>
+        <div>
+            <span>IDS-KMUTT</span><br>
+            <span class="version">v1.0 — Hybrid IDS</span>
+        </div>
+    </div>
+    <div class="sidebar-section">Overview</div>
+    <a class="sidebar-item" href="{% url 'dashboard' %}"><span class="icon">📊</span> Dashboard</a>
+    <a class="sidebar-item" href="{% url 'alerts' %}"><span class="icon">⚡</span> Alerts</a>
+    <div class="sidebar-section">Detection</div>
+    <a class="sidebar-item" href="{% url 'ml_models' %}"><span class="icon">🤖</span> ML Models</a>
+    <a class="sidebar-item" href="{% url 'snort_rules' %}"><span class="icon">🔍</span> Snort Rules</a>
+    <a class="sidebar-item active" href="{% url 'fusion_engine' %}"><span class="icon">⚙️</span> Fusion Engine</a>
+    <div class="sidebar-section">System</div>
+    <a class="sidebar-item" href="/admin"><span class="icon">🔧</span> Admin</a>
+    <a class="sidebar-item" href="/api/alerts/"><span class="icon">🔌</span> REST API</a>
+    <div class="sidebar-bottom">KMUTT CPE Department<br>Darren Touopi — SQR 2026</div>
+</aside>
+
+<div class="main">
+    <div class="topbar">
+        <div class="topbar-left">
+            <h2>⚙️ Fusion Engine</h2>
+            <div class="breadcrumb">Dashboard / Fusion Engine / Decision Rules & Statistics</div>
+        </div>
+        <div class="topbar-right">
+            <span style="padding:4px 12px; border-radius:4px; font-size:0.8rem; font-weight:600;
+                background:rgba(34,197,94,0.15); color:#22c55e; border:1px solid rgba(34,197,94,0.3);">
+                ACTIVE
+            </span>
+        </div>
+    </div>
+
+    <div class="content">
+
+        <!-- Pipeline diagram -->
+        <div class="card" style="margin-bottom:20px; padding:24px;">
+            <div class="card-header" style="margin-bottom:20px;">
+                <h3>Cascade Detection Pipeline</h3>
+                <span class="card-badge">How IDS-KMUTT makes decisions</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0;">
+
+                <!-- Step 1 -->
+                <div style="text-align:center; min-width:120px;">
+                    <div style="background:#1e2d45; border:1px solid #2d4a6e; border-radius:8px; padding:12px 16px;">
+                        <div style="font-size:1.5rem;">🌐</div>
+                        <div style="font-size:0.75rem; font-weight:600; color:#60a5fa; margin-top:6px;">Network Flow</div>
+                        <div style="font-size:0.65rem; color:#64748b; margin-top:2px;">Zeek captures</div>
+                    </div>
+                </div>
+
+                <div style="color:#334155; font-size:1.5rem; padding:0 4px;">→</div>
+
+                <!-- Step 2 -->
+                <div style="text-align:center; min-width:180px;">
+                    <div style="background:#1e2d45; border:1px solid #2d4a6e; border-radius:8px; padding:12px 16px;">
+                        <div style="font-size:1.5rem;">🤖</div>
+                        <div style="font-size:0.75rem; font-weight:600; color:#60a5fa; margin-top:6px;">Binary Models × 3</div>
+                        <div style="display:flex; gap:4px; justify-content:center; margin-top:6px;">
+                            <span style="font-size:0.6rem; padding:2px 5px; background:rgba(59,130,246,0.2); color:#60a5fa; border-radius:3px;">RF</span>
+                            <span style="font-size:0.6rem; padding:2px 5px; background:rgba(99,102,241,0.2); color:#818cf8; border-radius:3px;">XGB</span>
+                            <span style="font-size:0.6rem; padding:2px 5px; background:rgba(168,85,247,0.2); color:#c084fc; border-radius:3px;">LSTM</span>
+                        </div>
+                        <div style="font-size:0.65rem; color:#64748b; margin-top:4px;">Run simultaneously</div>
+                    </div>
+                </div>
+
+                <div style="color:#334155; font-size:1.5rem; padding:0 4px;">→</div>
+
+                <!-- Step 3 -->
+                <div style="text-align:center; min-width:140px;">
+                    <div style="background:#1e2d45; border:1px solid #2d4a6e; border-radius:8px; padding:12px 16px;">
+                        <div style="font-size:1.5rem;">🗳️</div>
+                        <div style="font-size:0.75rem; font-weight:600; color:#60a5fa; margin-top:6px;">Voting</div>
+                        <div style="font-size:0.65rem; color:#64748b; margin-top:2px;">≥ 1 vote = ATTACK</div>
+                    </div>
+                </div>
+
+                <div style="color:#334155; font-size:1.5rem; padding:0 4px;">→</div>
+
+                <!-- Step 4 -->
+                <div style="text-align:center; min-width:160px;">
+                    <div style="background:#1e2d45; border:1px solid rgba(99,102,241,0.4); border-radius:8px; padding:12px 16px;">
+                        <div style="font-size:1.5rem;">🔍</div>
+                        <div style="font-size:0.75rem; font-weight:600; color:#818cf8; margin-top:6px;">Multiclass ID</div>
+                        <div style="font-size:0.65rem; color:#64748b; margin-top:2px;">If ATTACK → type</div>
+                    </div>
+                </div>
+
+                <div style="color:#334155; font-size:1.5rem; padding:0 4px;">+</div>
+
+                <!-- Step 5 -->
+                <div style="text-align:center; min-width:140px;">
+                    <div style="background:#1e2d45; border:1px solid rgba(168,85,247,0.4); border-radius:8px; padding:12px 16px;">
+                        <div style="font-size:1.5rem;">🐗</div>
+                        <div style="font-size:0.75rem; font-weight:600; color:#c084fc; margin-top:6px;">Snort Rules</div>
+                        <div style="font-size:0.65rem; color:#64748b; margin-top:2px;">133,866 signatures</div>
+                    </div>
+                </div>
+
+                <div style="color:#334155; font-size:1.5rem; padding:0 4px;">→</div>
+
+                <!-- Step 6 -->
+                <div style="text-align:center; min-width:140px;">
+                    <div style="background:#1e2d45; border:1px solid rgba(239,68,68,0.4); border-radius:8px; padding:12px 16px;">
+                        <div style="font-size:1.5rem;">⚙️</div>
+                        <div style="font-size:0.75rem; font-weight:600; color:#f87171; margin-top:6px;">Fusion Engine</div>
+                        <div style="font-size:0.65rem; color:#64748b; margin-top:2px;">4 decision rules</div>
+                    </div>
+                </div>
+
+                <div style="color:#334155; font-size:1.5rem; padding:0 4px;">→</div>
+
+                <!-- Output -->
+                <div style="text-align:center; min-width:120px;">
+                    <div style="background:#1e2d45; border:1px solid rgba(34,197,94,0.4); border-radius:8px; padding:12px 16px;">
+                        <div style="font-size:1.5rem;">📊</div>
+                        <div style="font-size:0.75rem; font-weight:600; color:#22c55e; margin-top:6px;">Decision</div>
+                        <div style="font-size:0.65rem; color:#64748b; margin-top:2px;">THREAT/ALERT/BENIGN</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Fusion rules -->
+        <div class="card" style="margin-bottom:20px;">
+            <div class="card-header">
+                <h3>Decision Rules</h3>
+                <span class="card-badge">Confidence threshold: {{ conf_threshold }}%</span>
+            </div>
+            <table style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">#</th>
+                        <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">ML Prediction</th>
+                        <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Snort</th>
+                        <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Decision</th>
+                        <th style="padding:12px 16px; text-align:left; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Source Tag</th>
+                        <th style="padding:12px 16px; text-align:right; font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Times Applied</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:14px 16px; color:#64748b;">R1</td>
+                        <td style="padding:14px 16px;"><span style="color:#ef4444; font-weight:600;">ATTACK</span> <span style="color:#64748b; font-size:0.8rem;">+ conf ≥ {{ conf_threshold }}%</span></td>
+                        <td style="padding:14px 16px;"><span style="color:#22c55e;">YES</span></td>
+                        <td style="padding:14px 16px;"><span class="badge THREAT">THREAT</span></td>
+                        <td style="padding:14px 16px;"><span class="tag BOTH">BOTH</span></td>
+                        <td style="padding:14px 16px; text-align:right; font-weight:700; color:#60a5fa;">{{ both_count }}</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:14px 16px; color:#64748b;">R2</td>
+                        <td style="padding:14px 16px;"><span style="color:#ef4444; font-weight:600;">ATTACK</span> <span style="color:#64748b; font-size:0.8rem;">+ conf ≥ {{ conf_threshold }}%</span></td>
+                        <td style="padding:14px 16px;"><span style="color:#ef4444;">NO</span></td>
+                        <td style="padding:14px 16px;"><span class="badge ALERT">ALERT</span></td>
+                        <td style="padding:14px 16px;"><span class="tag ML_ONLY">ML_ONLY</span></td>
+                        <td style="padding:14px 16px; text-align:right; font-weight:700; color:#60a5fa;">{{ ml_only_count }}</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:14px 16px; color:#64748b;">R3</td>
+                        <td style="padding:14px 16px;"><span style="color:#22c55e; font-weight:600;">BENIGN</span></td>
+                        <td style="padding:14px 16px;"><span style="color:#22c55e;">YES</span></td>
+                        <td style="padding:14px 16px;"><span class="badge THREAT">THREAT</span></td>
+                        <td style="padding:14px 16px;"><span class="tag SNORT_ONLY">SNORT_ONLY</span></td>
+                        <td style="padding:14px 16px; text-align:right; font-weight:700; color:#60a5fa;">{{ snort_only_count }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:14px 16px; color:#64748b;">R4</td>
+                        <td style="padding:14px 16px;"><span style="color:#22c55e; font-weight:600;">BENIGN</span></td>
+                        <td style="padding:14px 16px;"><span style="color:#ef4444;">NO</span></td>
+                        <td style="padding:14px 16px;"><span class="badge BENIGN">BENIGN</span></td>
+                        <td style="padding:14px 16px;"><span class="tag NONE">NONE</span></td>
+                        <td style="padding:14px 16px; text-align:right; font-weight:700; color:#60a5fa;">{{ none_count }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+
+            <!-- Rule distribution chart -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Rule Application Distribution</h3>
+                    <span class="card-badge">{{ total }} total flows</span>
+                </div>
+                <canvas id="ruleChart" height="220"></canvas>
+            </div>
+
+            <!-- Voting distribution -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Model Voting Distribution</h3>
+                    <span class="card-badge">Agreement level</span>
+                </div>
+                <canvas id="voteChart" height="220"></canvas>
+            </div>
+
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+
+            <!-- Model detection rates -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Model Detection Rates</h3>
+                    <span class="card-badge">Attacks detected per model</span>
+                </div>
+                {% for model, count, color in model_stats %}
+                <div style="margin-bottom:16px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span style="font-size:0.85rem; color:var(--text-secondary);">{{ model }}</span>
+                        <span style="font-size:0.85rem; font-weight:600; color:var(--text-primary);">{{ count }}</span>
+                    </div>
+                    <div style="background:#1e293b; border-radius:4px; height:8px;">
+                        <div style="background:{{ color }}; border-radius:4px; height:8px; width:{% if total > 0 %}{% widthratio count total 100 %}{% else %}0{% endif %}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div style="margin-bottom:16px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span style="font-size:0.85rem; color:var(--text-secondary);">Random Forest</span>
+                        <span style="font-size:0.85rem; font-weight:600; color:var(--text-primary);">{{ rf_detections }}</span>
+                    </div>
+                    <div style="background:#1e293b; border-radius:4px; height:8px;">
+                        <div style="background:#3b82f6; border-radius:4px; height:8px; width:{% if total > 0 %}{% widthratio rf_detections total 100 %}{% else %}0{% endif %}%;"></div>
+                    </div>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span style="font-size:0.85rem; color:var(--text-secondary);">XGBoost</span>
+                        <span style="font-size:0.85rem; font-weight:600; color:var(--text-primary);">{{ xgb_detections }}</span>
+                    </div>
+                    <div style="background:#1e293b; border-radius:4px; height:8px;">
+                        <div style="background:#6366f1; border-radius:4px; height:8px; width:{% if total > 0 %}{% widthratio xgb_detections total 100 %}{% else %}0{% endif %}%;"></div>
+                    </div>
+                </div>
+                <div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span style="font-size:0.85rem; color:var(--text-secondary);">LSTM</span>
+                        <span style="font-size:0.85rem; font-weight:600; color:var(--text-primary);">{{ lstm_detections }}</span>
+                    </div>
+                    <div style="background:#1e293b; border-radius:4px; height:8px;">
+                        <div style="background:#a855f7; border-radius:4px; height:8px; width:{% if total > 0 %}{% widthratio lstm_detections total 100 %}{% else %}0{% endif %}%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average confidence -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Average ML Confidence</h3>
+                    <span class="card-badge">By decision type</span>
+                </div>
+                <div style="padding:20px 0;">
+                    <div style="margin-bottom:24px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                            <span style="color:#ef4444; font-weight:600;">THREAT</span>
+                            <span style="color:var(--text-primary); font-weight:700;">{{ avg_conf_threat }}%</span>
+                        </div>
+                        <div style="background:#1e293b; border-radius:4px; height:12px;">
+                            <div style="background:#ef4444; border-radius:4px; height:12px; width:{{ avg_conf_threat }}%;"></div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom:24px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                            <span style="color:#f97316; font-weight:600;">ALERT</span>
+                            <span style="color:var(--text-primary); font-weight:700;">{{ avg_conf_alert }}%</span>
+                        </div>
+                        <div style="background:#1e293b; border-radius:4px; height:12px;">
+                            <div style="background:#f97316; border-radius:4px; height:12px; width:{{ avg_conf_alert }}%;"></div>
+                        </div>
+                    </div>
+                    <div style="margin-top:24px; padding:16px; background:#0f172a; border-radius:8px; border:1px solid #1e2d45;">
+                        <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Confidence Threshold</div>
+                        <div style="font-size:1.5rem; font-weight:700; color:#60a5fa; font-family:monospace;">{{ conf_threshold }}%</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Minimum confidence to trigger ALERT</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Attack type breakdown -->
+        {% if attack_dist %}
+        <div class="card">
+            <div class="card-header">
+                <h3>Detected Attack Types</h3>
+                <span class="card-badge">Multiclass identification</span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:12px; padding:8px 0;">
+                {% for item in attack_dist %}
+                <div style="background:#0f172a; border:1px solid #1e2d45; border-radius:8px; padding:16px; text-align:center;">
+                    <div style="font-size:1.5rem; font-weight:700; color:#60a5fa; font-family:monospace;">{{ item.count }}</div>
+                    <div style="font-size:0.82rem; color:var(--text-secondary); margin-top:4px;">{{ item.attack_type }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<script>
+// Rule distribution chart
+new Chart(document.getElementById('ruleChart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Both (R1)', 'ML Only (R2)', 'Snort Only (R3)', 'Benign (R4)'],
+        datasets: [{
+            data: [{{ both_count }}, {{ ml_only_count }}, {{ snort_only_count }}, {{ none_count }}],
+            backgroundColor: ['#ef4444', '#f97316', '#a855f7', '#1e293b'],
+            borderColor: '#111827',
+            borderWidth: 3,
+            hoverOffset: 4
+        }]
+    },
+    options: {
+        cutout: '65%',
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 }
+            }
+        }
+    }
+});
+
+// Vote distribution chart
+new Chart(document.getElementById('voteChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+        labels: ['1/3 Models', '2/3 Models', '3/3 Models'],
+        datasets: [{
+            label: 'Detections',
+            data: [{{ votes_1 }}, {{ votes_2 }}, {{ votes_3 }}],
+            backgroundColor: ['rgba(249,115,22,0.7)', 'rgba(239,68,68,0.7)', 'rgba(34,197,94,0.7)'],
+            borderColor: ['#f97316', '#ef4444', '#22c55e'],
+            borderWidth: 1,
+            borderRadius: 4,
+        }]
+    },
+    options: {
+        scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(30,45,69,0.8)' } },
+            y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(30,45,69,0.8)' }, beginAtZero: true }
+        },
+        plugins: { legend: { display: false } }
+    }
+});
+</script>
+
+</body>
+</html>
