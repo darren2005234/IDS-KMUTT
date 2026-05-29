@@ -25,9 +25,9 @@ def dashboard_view(request):
     recent = Alert.objects.all()[:10]
 
     # ML model breakdown
-    rf_count   = Alert.objects.filter(ml_model_used='RandomForest').count()
-    xgb_count  = Alert.objects.filter(ml_model_used='XGBoost').count()
-    lstm_count = Alert.objects.filter(ml_model_used='LSTM').count()
+    rf_count   = Alert.objects.filter(ml_model_used__contains='RandomForest').count()
+    xgb_count  = Alert.objects.filter(ml_model_used__contains='XGBoost').count()
+    lstm_count = Alert.objects.filter(ml_model_used__contains='LSTM').count()
 
     # Source tag breakdown
     both_count   = Alert.objects.filter(source_tag='BOTH').count()
@@ -190,9 +190,9 @@ def stats_api(request):
         'both'       : Alert.objects.filter(source_tag='BOTH').count(),
         'ml_only'    : Alert.objects.filter(source_tag='ML_ONLY').count(),
         'snort_only' : Alert.objects.filter(source_tag='SNORT_ONLY').count(),
-        'rf_count'   : Alert.objects.filter(ml_model_used='RandomForest').count(),
-        'xgb_count'  : Alert.objects.filter(ml_model_used='XGBoost').count(),
-        'lstm_count' : Alert.objects.filter(ml_model_used='LSTM').count(),
+        'rf_count'   : Alert.objects.filter(ml_model_used__contains='RandomForest').count(),
+        'xgb_count'  : Alert.objects.filter(ml_model_used__contains='XGBoost').count(),
+        'lstm_count' : Alert.objects.filter(ml_model_used__contains='LSTM').count(),
         'attack_dist': attack_dist,
     })
 

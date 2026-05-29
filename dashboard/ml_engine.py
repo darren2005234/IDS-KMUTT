@@ -228,7 +228,8 @@ def predict(features: dict, model_name: str = None, mode: str = None) -> dict:
         agreement  = 'none'
 
     detecting_models = [m for m, r in results.items() if r['pred'] == 1]
-    ml_model_used    = '+'.join(detecting_models) if detecting_models else 'None'
+    all_models       = '+'.join(results.keys())
+    ml_model_used    = '+'.join(detecting_models) if detecting_models else all_models
 
     # ── Multiclass identification (only if ATTACK) ────────────
     attack_type = 'BENIGN'
