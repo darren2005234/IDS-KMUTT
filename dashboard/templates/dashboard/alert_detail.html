@@ -23,7 +23,7 @@
     <div class="sidebar-section">Detection</div>
     <a class="sidebar-item" href="{% url 'ml_models' %}"><span class="icon">🤖</span> ML Models</a>
     <a class="sidebar-item" href="{% url 'snort_rules' %}"><span class="icon">🔍</span> Snort Rules</a>
-    <a class="sidebar-item" href="#"><span class="icon">⚙️</span> Fusion Engine</a>
+    <a class="sidebar-item" href="{% url 'fusion_engine' %}"><span class="icon">⚙️</span> Fusion Engine</a>
     <div class="sidebar-section">System</div>
     <a class="sidebar-item" href="/admin"><span class="icon">🔧</span> Admin</a>
     <a class="sidebar-item" href="/api/alerts/"><span class="icon">🔌</span> REST API</a>
@@ -69,8 +69,12 @@
                     </div>
                 </div>
                 <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
-                    <!-- Detection mode badge -->
-                    {% if alert.detection_mode == 'multiclass' %}
+                    {% if alert.detection_mode == 'cascade' %}
+                    <span style="padding:3px 10px; border-radius:4px; font-size:0.75rem; font-weight:600;
+                        background:rgba(34,197,94,0.15); color:#22c55e; border:1px solid rgba(34,197,94,0.3);">
+                        Cascade
+                    </span>
+                    {% elif alert.detection_mode == 'multiclass' %}
                     <span style="padding:3px 10px; border-radius:4px; font-size:0.75rem; font-weight:600;
                         background:rgba(99,102,241,0.15); color:#818cf8; border:1px solid rgba(99,102,241,0.3);">
                         Multiclass
@@ -137,7 +141,10 @@
                     <tr>
                         <td class="detail-label">Detection Mode</td>
                         <td class="detail-value">
-                            {% if alert.detection_mode == 'multiclass' %}
+                            {% if alert.detection_mode == 'cascade' %}
+                            <span style="padding:3px 10px; background:rgba(34,197,94,0.15);
+                                color:#22c55e; border-radius:4px; font-size:0.82rem;">Cascade</span>
+                            {% elif alert.detection_mode == 'multiclass' %}
                             <span style="padding:3px 10px; background:rgba(99,102,241,0.15);
                                 color:#818cf8; border-radius:4px; font-size:0.82rem;">Multiclass</span>
                             {% else %}
@@ -156,7 +163,7 @@
                             {% endif %}
                         </td>
                     </tr>
-                    {% if alert.detection_mode == 'multiclass' %}
+                    {% if alert.detection_mode == 'cascade' or alert.detection_mode == 'multiclass' %}
                     <tr>
                         <td class="detail-label">Attack Type</td>
                         <td class="detail-value">
@@ -173,7 +180,7 @@
                             <div class="conf-bar" style="max-width:200px;">
                                 <div class="bar">
                                     <div class="fill {% if alert.ml_confidence >= 0.85 %}high{% elif alert.ml_confidence >= 0.6 %}med{% else %}low{% endif %}"
-                                         style="width:{{ alert.ml_confidence|floatformat:0 }}%"></div>
+                                         style="width:{% widthratio alert.ml_confidence 1 100 %}%"></div>
                                 </div>
                                 <span>{{ alert.ml_confidence|floatformat:4 }}</span>
                             </div>
@@ -225,9 +232,11 @@
                             {% if alert.source_tag == 'BOTH' %}
                                 ML=ATTACK + Snort=YES → THREAT
                             {% elif alert.source_tag == 'ML_ONLY' %}
-                                ML=ATTACK (conf>85%) + Snort=NO → ALERT
+                                ML=ATTACK (conf ≥ 50%) + Snort=NO → ALERT
                             {% elif alert.source_tag == 'SNORT_ONLY' %}
                                 ML=BENIGN + Snort=YES → THREAT
+                            {% elif alert.ml_prediction == 1 and alert.source_tag == 'NONE' %}
+                                ML=ATTACK (conf < 50%) + Snort=NO → BENIGN
                             {% else %}
                                 ML=BENIGN + Snort=NO → BENIGN
                             {% endif %}

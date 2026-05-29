@@ -23,7 +23,7 @@
     <div class="sidebar-section">Detection</div>
     <a class="sidebar-item" href="{% url 'ml_models' %}"><span class="icon">🤖</span> ML Models</a>
     <a class="sidebar-item" href="{% url 'snort_rules' %}"><span class="icon">🔍</span> Snort Rules</a>
-    <a class="sidebar-item" href="#"><span class="icon">⚙️</span> Fusion Engine</a>
+    <a class="sidebar-item" href="{% url 'fusion_engine' %}"><span class="icon">⚙️</span> Fusion Engine</a>
     <div class="sidebar-section">System</div>
     <a class="sidebar-item" href="/admin"><span class="icon">🔧</span> Admin</a>
     <a class="sidebar-item" href="/api/alerts/"><span class="icon">🔌</span> REST API</a>
@@ -135,7 +135,7 @@
                                 <div class="conf-bar">
                                     <div class="bar">
                                         <div class="fill {% if alert.ml_confidence >= 0.85 %}high{% elif alert.ml_confidence >= 0.6 %}med{% else %}low{% endif %}"
-                                             style="width:{{ alert.ml_confidence|floatformat:0 }}%"></div>
+                                             style="width:{% widthratio alert.ml_confidence 1 100 %}%"></div>
                                     </div>
                                     <span>{{ alert.ml_confidence|floatformat:2 }}</span>
                                 </div>
