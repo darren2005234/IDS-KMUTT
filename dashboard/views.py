@@ -169,33 +169,57 @@ def alert_list(request):
 
 @api_view(['GET'])
 def stats_api(request):
-    from django.db.models import Count
+    from django.db.models import Count, Q
+    from django.utils import timezone
+    from datetime import timedelta
 
-    # Attack type distribution (multiclass only)
-    attack_types = Alert.objects.filter(
+    # Period filter: ?period=1h | 24h | all (default all)
+    period = request.GET.get('period', 'all')
+    qs = Alert.objects.all()
+    if period == '1h':
+        qs = qs.filter(timestamp__gte=timezone.now() - timedelta(hours=1))
+    elif period == '24h':
+        qs = qs.filter(timestamp__gte=timezone.now() - timedelta(hours=24))
+
+    # Attack type distribution (includes Unknown Attack, excludes BENIGN)
+    attack_types = qs.filter(
         detection_mode__in=['multiclass', 'cascade']
     ).exclude(
-        attack_type__in=['BENIGN', 'Unknown Attack']
+        attack_type__in=['BENIGN']
     ).values('attack_type').annotate(
         count=Count('attack_type')
     ).order_by('-count')
-
     attack_dist = {item['attack_type']: item['count'] for item in attack_types}
 
-    return Response({
-        'total'      : Alert.objects.count(),
-        'threats'    : Alert.objects.filter(decision='THREAT').count(),
-        'alerts'     : Alert.objects.filter(decision='ALERT').count(),
-        'benign'     : Alert.objects.filter(decision='BENIGN').count(),
-        'both'       : Alert.objects.filter(source_tag='BOTH').count(),
-        'ml_only'    : Alert.objects.filter(source_tag='ML_ONLY').count(),
-        'snort_only' : Alert.objects.filter(source_tag='SNORT_ONLY').count(),
-        'rf_count'   : Alert.objects.filter(ml_model_used__contains='RandomForest').count(),
-        'xgb_count'  : Alert.objects.filter(ml_model_used__contains='XGBoost').count(),
-        'lstm_count' : Alert.objects.filter(ml_model_used__contains='LSTM').count(),
-        'attack_dist': attack_dist,
-    })
+    # Per-model decision distribution (Benign / Alert / Threat)
+    def model_dist(model_name):
+            from django.db.models import Avg
+            m = qs.filter(ml_model_used__contains=model_name)
+            avg_conf = m.aggregate(avg=Avg('ml_confidence'))['avg'] or 0.0
+            return {
+                'benign': m.filter(decision='BENIGN').count(),
+                'alert' : m.filter(decision='ALERT').count(),
+                'threat': m.filter(decision='THREAT').count(),
+                'avg_conf': round(avg_conf, 3),
+            }
 
+    return Response({
+        'total'      : qs.count(),
+        'threats'    : qs.filter(decision='THREAT').count(),
+        'alerts'     : qs.filter(decision='ALERT').count(),
+        'benign'     : qs.filter(decision='BENIGN').count(),
+        'both'       : qs.filter(source_tag='BOTH').count(),
+        'ml_only'    : qs.filter(source_tag='ML_ONLY').count(),
+        'snort_only' : qs.filter(source_tag='SNORT_ONLY').count(),
+        'rf_count'   : qs.filter(ml_model_used__contains='RandomForest').count(),
+        'xgb_count'  : qs.filter(ml_model_used__contains='XGBoost').count(),
+        'lstm_count' : qs.filter(ml_model_used__contains='LSTM').count(),
+        'rf_dist'    : model_dist('RandomForest'),
+        'xgb_dist'   : model_dist('XGBoost'),
+        'lstm_dist'  : model_dist('LSTM'),
+        'attack_dist': attack_dist,
+        'period'     : period,
+    })
 
 @api_view(['GET'])
 def models_status(request):
