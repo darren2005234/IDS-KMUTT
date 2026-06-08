@@ -1,0 +1,2 @@
+model,sequence_len,accuracy,f1_macro,f1_binary,precision,recall,roc_auc,fpr,tp,fp,tn,fn,best_threshold,train_time_s,infer_time_s,total_time_s,epochs_run,batch_size
+LSTM,10,0.9982,0.9982,0.9982,0.9983,0.9981,1.0,0.0017,99863,166,99778,191,0.9,712.3,3.65,733.2,25,512
