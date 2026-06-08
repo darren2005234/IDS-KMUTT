@@ -1,0 +1,2 @@
+model,accuracy,f1_macro,precision,recall,roc_auc,fpr,correct,errors,infer_time_s,train_time_s,total_time_s,best_params,n_classes
+RandomForest_multiclass,0.9989,0.9482,0.9825,0.9234,1.0,0.0004,564936,640,2.73,4066.4,4080.4,"{'max_depth': 30, 'max_features': 'sqrt', 'min_samples_split': 2, 'n_estimators': 200}",8

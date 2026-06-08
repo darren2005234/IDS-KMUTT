@@ -1,0 +1,2 @@
+model,sequence_len,accuracy,f1_macro,precision,recall,roc_auc,fpr,correct,errors,train_time_s,infer_time_s,total_time_s,epochs_run,batch_size,n_classes
+LSTM_multiclass,10,0.9981,0.7999,0.8107,0.7909,0.9988,0.0008,199614,384,852.8,3.62,863.6,30,512,8

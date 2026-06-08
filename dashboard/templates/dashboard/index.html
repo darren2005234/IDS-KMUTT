@@ -1,0 +1,189 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDS-KMUTT — Security Dashboard</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<!-- ── Sidebar ──────────────────────────────────────────── -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-icon">🛡️</div>
+        <div>
+            <span>IDS-KMUTT</span><br>
+            <span class="version">v1.0 — Hybrid IDS</span>
+        </div>
+    </div>
+
+    <div class="sidebar-section">Overview</div>
+    <a class="sidebar-item active" href="#">
+        <span class="icon">📊</span> Dashboard
+    </a>
+    <a class="sidebar-item" href="{% url 'alerts' %}">
+        <span class="icon">⚡</span> Alerts
+    </a>
+
+    <div class="sidebar-section">Detection</div>
+    <a class="sidebar-item" href="{% url 'ml_models' %}">
+        <span class="icon">🤖</span> ML Models
+    </a>
+    <a class="sidebar-item" href="{% url 'snort_rules' %}"><span class="icon">🔍</span> Snort Rules</a>
+    <a class="sidebar-item" href="{% url 'fusion_engine' %}">
+        <span class="icon">⚙️</span> Fusion Engine
+    </a>
+
+    <div class="sidebar-section">System</div>
+    <a class="sidebar-item" href="/admin">
+        <span class="icon">🔧</span> Admin
+    </a>
+    <a class="sidebar-item" href="/api/alerts/">
+        <span class="icon">🔌</span> REST API
+    </a>
+
+    <div class="sidebar-bottom">
+        KMUTT CPE Department<br>
+        Darren Touopi — SQR 2026
+    </div>
+</aside>
+
+<!-- ── Main ─────────────────────────────────────────────── -->
+<div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <h2>Security Overview</h2>
+            <div class="breadcrumb">Dashboard → Real-time Monitoring</div>
+        </div>
+        <div class="topbar-right">
+            <div class="live-badge">
+                <div class="live-dot"></div>
+                LIVE
+            </div>
+            <!-- Mode selector -->
+            <div style="display:flex; gap:4px; background:#0f172a; padding:4px; border-radius:6px; border:1px solid #1e2d45;">
+                <button id="btn-binary" onclick="setMode('binary')"
+                    style="padding:4px 14px; border-radius:4px; border:none; cursor:pointer; font-size:0.78rem; font-weight:600;
+                        background:#1d7adb; color:white; transition:all 0.15s;">
+                    Binary
+                </button>
+                <button id="btn-multi" onclick="setMode('multiclass')"
+                    style="padding:4px 14px; border-radius:4px; border:none; cursor:pointer; font-size:0.78rem; font-weight:600;
+                        background:transparent; color:#64748b; transition:all 0.15s;">
+                    Multiclass
+                </button>
+            </div>
+            <div class="last-refresh" id="last-refresh">Connecting...</div>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <a href="{% url 'alerts' %}" class="stat-card total" style="text-decoration:none;">
+                <div class="stat-icon">📋</div>
+                <div class="stat-info">
+                    <div class="value" id="stat-total">{{ total }}</div>
+                    <div class="label">Total Flows Analysed</div>
+                </div>
+            </a>
+            <a href="{% url 'alerts' %}?decision=THREAT" class="stat-card threat" style="text-decoration:none;">
+                <div class="stat-icon">🔴</div>
+                <div class="stat-info">
+                    <div class="value" id="stat-threat">{{ threats }}</div>
+                    <div class="label">Threats Detected</div>
+                </div>
+            </a>
+            <a href="{% url 'alerts' %}?decision=ALERT" class="stat-card alert" style="text-decoration:none;">
+                <div class="stat-icon">🟠</div>
+                <div class="stat-info">
+                    <div class="value" id="stat-alert">{{ alerts }}</div>
+                    <div class="label">ML-Only Alerts</div>
+                </div>
+            </a>
+            <a href="{% url 'alerts' %}?decision=BENIGN" class="stat-card benign" style="text-decoration:none;">
+                <div class="stat-icon">🟢</div>
+                <div class="stat-info">
+                    <div class="value" id="stat-benign">{{ benign }}</div>
+                    <div class="label">Benign Flows</div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Traffic Distribution</h3>
+                    <span class="card-badge">Last {{ total }} flows</span>
+                </div>
+                <canvas id="trafficChart" height="180"></canvas>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>Alert Source Distribution</h3>
+                    <span class="card-badge">By detection layer</span>
+                </div>
+                <canvas id="sourceChart" height="180"></canvas>
+            </div>
+            <!-- Attack Type Distribution (multiclass only) -->
+            <div class="card" id="attack-type-card" style="display:none;">
+                <div class="card-header">
+                    <h3>Attack Type Distribution</h3>
+                    <span class="card-badge">Multiclass mode</span>
+                </div>
+                <canvas id="attackTypeChart" height="180"></canvas>
+            </div>
+        </div>
+
+        <!-- Alert Table -->
+        <div class="card table-card">
+            <div class="card-header">
+                <h3>⚡ Recent Alerts</h3>
+                <span class="card-badge">Auto-refresh 5s</span>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr id="table-header">
+                            <th>ID</th>
+                            <th>Timestamp</th>
+                            <th>Source IP</th>
+                            <th>Destination IP</th>
+                            <th>Decision</th>
+                            <th>Source Tag</th>
+                            <th id="th-attack-type" style="display:none;">Attack Type</th>
+                            <th>ML Confidence</th>
+                            <th>Snort SID</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alert-tbody">
+                        {% for alert in recent %}
+                            <tr style="cursor:pointer;" onclick="window.location='{% url 'alert_detail' alert.id %}'">
+                        {% empty %}
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state">
+                                    🛡️ No alerts yet — system monitoring active
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="{% static 'dashboard/js/dashboard.js' %}"></script>
+</body>
+</html>

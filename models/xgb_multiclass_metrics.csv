@@ -1,0 +1,2 @@
+model,accuracy,f1_macro,precision,recall,roc_auc,fpr,correct,errors,infer_time_s,optuna_time_s,total_time_s,best_params,n_classes
+XGBoost_multiclass,0.9992,0.96,0.9843,0.9404,0.9999,0.0002,565135,441,1.07,13427.8,13473.4,"{'n_estimators': 137, 'max_depth': 8, 'learning_rate': 0.1328466666773342, 'subsample': 0.6450906871173014, 'colsample_bytree': 0.7842027773604395, 'min_child_weight': 3}",8

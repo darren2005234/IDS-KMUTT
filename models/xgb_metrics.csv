@@ -1,0 +1,2 @@
+model,accuracy,f1_macro,f1_binary,precision,recall,roc_auc,fpr,tp,fp,tn,fn,best_threshold,n_trials,best_cv_f1,optuna_time_s,train_time_s,infer_time_s,total_time_s,best_params
+XGBoost,0.9994,0.9994,0.9994,0.9991,0.9998,1.0,0.0009,454171,415,453849,93,0.9,50,0.9994,5019.7,38.1,1.0,5075.2,"{'n_estimators': 462, 'learning_rate': 0.167134921445202, 'max_depth': 9, 'subsample': 0.97701650666466, 'colsample_bytree': 0.7795535941172491, 'min_child_weight': 5, 'reg_alpha': 0.024785929931020766, 'reg_lambda': 5.253649755578878e-08}"
