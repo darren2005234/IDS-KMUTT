@@ -88,19 +88,29 @@ def clean(v):
         return 0.0
 
 
-def read_snort_alerts(max_lines=20000):
-    """Return dict {(src_ip,dst_ip): sid} from the tail of the Snort fast log."""
+def read_snort_alerts(max_lines=20000, max_age_s=90):
+    """Return dict {(src_ip,dst_ip): sid} — alertes des max_age_s dernières secondes."""
+    import re, time
+    from datetime import datetime
     pairs = {}
-    if not os.path.exists(SNORT_ALERT):
-        return pairs
+    # Format: 06/08-13:43:13.645681  [**] [1:9000001:1] ...
+    pat = re.compile(r'^(\d+/\d+-\d+:\d+:\d+)\.\d+.*?\[1:(\d+):\d+\].*?(\d+\.\d+\.\d+\.\d+):\d+ -> (\d+\.\d+\.\d+\.\d+)')
+    now = datetime.now()
     try:
-        with open(SNORT_ALERT, 'r', errors='ignore') as f:
-            lines = f.readlines()[-max_lines:]
-        for ln in lines:
-            m = SNORT_RE.search(ln)
-            if m:
-                sid, src, dst = m.group(1), m.group(2), m.group(3)
-                pairs[(src, dst)] = sid
+        with open(SNORT_ALERT, 'r', errors='replace') as fh:
+            lines = fh.readlines()[-max_lines:]
+        for line in lines:
+            m = pat.match(line)
+            if not m:
+                continue
+            ts_str, sid, src, dst = m.group(1), m.group(2), m.group(3), m.group(4)
+            try:
+                ts = datetime.strptime(f"{now.year}/{ts_str}", "%Y/%m/%d-%H:%M:%S")
+                if (now - ts).total_seconds() > max_age_s:
+                    continue
+            except:
+                continue
+            pairs[(src, dst)] = sid
     except Exception as e:
         log.error("snort read error: %s", e)
     return pairs
@@ -140,6 +150,7 @@ def classify_csv(csv_path, snort_pairs):
     """Read a CICFlowMeter CSV, batch the flows, POST them to the batch API."""
     sent = alerts = snort_hits = 0
     batch = []
+    matched_pairs = set()
  
     def flush(b):
         nonlocal sent, alerts
@@ -168,6 +179,7 @@ def classify_csv(csv_path, snort_pairs):
             snort_alert = sid is not None
             if snort_alert:
                 snort_hits += 1
+                matched_pairs.add((src, dst))
  
             feats.update({
                 'src_ip': src, 'dst_ip': dst,
@@ -184,6 +196,25 @@ def classify_csv(csv_path, snort_pairs):
                 batch = []
  
     flush(batch)   # remaining flows
+
+    # Alertes Snort sans flux CICFlowMeter (connexions trop courtes)
+    orphans = []
+    for (s, d), sid in snort_pairs.items():
+        if (s, d) not in matched_pairs:
+            flow = {fn: 0.0 for fn in FEATURE_NAMES}
+            flow.update({
+                'src_ip': s, 'dst_ip': d,
+                'src_port': 0, 'dst_port': 0,
+                'protocol': 'TCP',
+                'snort_alert': True,
+                'snort_sid': sid,
+            })
+            orphans.append(flow)
+    if orphans:
+        flush(orphans)
+        snort_hits += len(orphans)
+        log.info("Orphan Snort alerts posted: %d", len(orphans))
+
     return sent, alerts, snort_hits
 
 

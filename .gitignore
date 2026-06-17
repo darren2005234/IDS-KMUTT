@@ -1,38 +1,48 @@
-# Gros modèles (>100 Mo, dépassent la limite GitHub — gérés hors dépôt)
-models/rf_multiclass_best.joblib
-models/rf_binary_best.joblib
-
-# Base de données locale
-db.sqlite3
-
-# Cache Python
+# Python
 __pycache__/
 *.pyc
 *.pyo
+.Python
+*.egg-info/
 
-# Fichiers statiques collectés
-staticfiles/
-
-# Captures réseau (jamais sur GitHub)
-*.pcap
-
-# Secrets / credentials
-.kaggle/
-*token*
-*.env
-.venv/
+# Environnements
+.env
+.venv
+ids_env/
 venv/
 
-# Scripts de test/debug ponctuels
-diagnose_lstm.py
-test_cicflow_csv.py
-test_samples*.json
-test_attack.pcap
+# Sauvegardes
+*.bak
+*.backup
 
-# Anciens scripts remplaces par evaluate.py / cicflow_realtime.py
-metrics_friday.py
-validate_friday.py
+# Données brutes
+cicflow_live/
+*.pcap
+data/*.csv
+data/raw/
+data/processed/
+
+# Logs
+*.log
+logs/
+
+# Django
+db.sqlite3
+*.sqlite3
+media/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+staticfiles/
+test_samples*.json
+diagnose_lstm.py
 zeek_pipeline.py
 dashboard/nfstream_pipeline.py
-dashboard/cicflow_pipeline.py
-results/
