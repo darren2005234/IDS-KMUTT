@@ -1,0 +1,85 @@
+======================================================================
+SHAP ANALYSIS REPORT — IDS-KMUTT v2 (XGBoost Multiclass)
+======================================================================
+
+GLOBAL TOP 15 FEATURES (mean |SHAP| across all classes):
+  dst_port                                 0.955084
+  src_port                                 0.469728
+  src2dst_bytes                            0.383444
+  dst2src_stddev_ps                        0.353044
+  src2dst_max_ps                           0.311088
+  bidirectional_stddev_ps                  0.280367
+  bidirectional_rst_packets                0.223479
+  bidirectional_duration_ms                0.219358
+  src2dst_min_piat_ms                      0.210432
+  dst2src_stddev_piat_ms                   0.195108
+  dst2src_mean_ps                          0.190510
+  src2dst_stddev_ps                        0.177573
+  dst2src_max_piat_ms                      0.176572
+  dst2src_rst_packets                      0.172130
+  src2dst_mean_ps                          0.168547
+
+PER-CLASS TOP 5 FEATURES:
+
+  [BENIGN]
+    src_port                                 0.138306
+    ip_version                               0.136620
+    src2dst_packets                          0.130497
+    bidirectional_bytes                      0.126965
+    protocol                                 0.121716
+
+  [Botnet]
+    src2dst_packets                          0.174061
+    ip_version                               0.164269
+    protocol                                 0.144930
+    bidirectional_bytes                      0.135623
+    src_port                                 0.121020
+
+  [DDoS]
+    src_port                                 0.135720
+    ip_version                               0.135026
+    src2dst_packets                          0.133551
+    bidirectional_bytes                      0.130714
+    protocol                                 0.123264
+
+  [DoS]
+    src_port                                 0.141147
+    ip_version                               0.137704
+    bidirectional_bytes                      0.130595
+    src2dst_packets                          0.125383
+    protocol                                 0.122583
+
+  [FTP-Patator]
+    ip_version                               0.153086
+    dst_port                                 0.145191
+    src2dst_packets                          0.144297
+    bidirectional_bytes                      0.137171
+    protocol                                 0.131326
+
+  [Heartbleed]
+    src_port                                 0.165395
+    ip_version                               0.153837
+    bidirectional_bytes                      0.128164
+    protocol                                 0.125678
+    dst_port                                 0.116739
+
+  [PortScan]
+    src_port                                 0.139487
+    ip_version                               0.138684
+    src2dst_packets                          0.129750
+    bidirectional_bytes                      0.127765
+    protocol                                 0.122471
+
+  [SSH-Patator]
+    src2dst_packets                          0.188410
+    ip_version                               0.157746
+    protocol                                 0.135340
+    bidirectional_bytes                      0.133766
+    dst_port                                 0.116629
+
+  [Web Attack]
+    src_port                                 0.142635
+    dst_port                                 0.142077
+    ip_version                               0.137643
+    protocol                                 0.130922
+    bidirectional_bytes                      0.130090
